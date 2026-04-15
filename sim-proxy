@@ -1,0 +1,136 @@
+#!/usr/bin/env bash
+# sim-proxy — run a phase script with the live visualizer proxy
+#
+# Usage:
+#   ./sim-proxy <phase-script> [extra args passed to the script]
+#
+# What it does:
+#   1. Builds the project for real (make -j), then shadows 'make' with a
+#      no-op so the phase script's own 'make -j' doesn't overwrite our wrapper.
+#   2. Wraps build/guard_client so all client connections are redirected
+#      through the proxy (port 9099) instead of going directly to the LB.
+#   3. Starts proxy.py, which intercepts traffic and serves the live
+#      visualizer at http://127.0.0.1:9098/.
+#   4. Runs the phase script normally — servers, LB, and coordinator start
+#      as usual; only guard_client is rerouted.
+#   5. Opens the visualizer in your browser automatically.
+#   6. Restores guard_client and cleans up on any exit.
+
+set -euo pipefail
+
+SCRIPT="${1:?usage: ./sim-proxy <phase-script>}"
+shift || true   # remaining args are forwarded to the phase script
+
+ROOT="$(cd "$(dirname "$0")" && pwd)"
+BUILD="$ROOT/build"
+PROXY_LISTEN=9099
+PROXY_HTTP=9098
+
+# ── Detect backend port from the phase script ──────────────────────────────────
+# Phases 3/4 use a load balancer (LB_PORT); phases 1/2 use a single server.
+detect_backend_port() {
+    # Extract the numeric value after '=' for the first matching variable.
+    # Using sed to grab only what's on the right-hand side avoids false
+    # positives when the variable name itself contains digits (e.g. S1_PORT).
+    _port_from() { grep -E "^\s*$1\s*=" "$SCRIPT" | head -1 | sed 's/.*=\s*//' | tr -d '[:space:]'; }
+    local port
+    port=$(_port_from LB_PORT)                     # Phase 3/4/5: load balancer
+    [ -z "$port" ] && port=$(_port_from PORT)       # Phase 1/2: single server
+    [ -z "$port" ] && port=$(_port_from SERVER_PORT)
+    [ -z "$port" ] && port=$(_port_from S1_PORT)    # Phase 6: direct-to-worker
+    echo "${port:-8080}"
+}
+
+TARGET_PORT=$(detect_backend_port)
+
+echo "[sim-proxy] target backend : 127.0.0.1:$TARGET_PORT"
+echo "[sim-proxy] proxy listener : 127.0.0.1:$PROXY_LISTEN"
+echo "[sim-proxy] visualizer     : http://127.0.0.1:$PROXY_HTTP/"
+echo ""
+
+# ── 1. Build for real ─────────────────────────────────────────────────────────
+echo "[sim-proxy] building..."
+make -C "$ROOT" -j
+echo ""
+
+# ── 2. Shadow 'make' with a no-op ─────────────────────────────────────────────
+# The phase script calls 'make -j' at the top. If that rebuilt guard_client
+# it would overwrite the wrapper below.  Put a no-op 'make' earlier in PATH.
+FAKE_BIN=$(mktemp -d)
+printf '#!/usr/bin/env bash\necho "[make] skipped — already built by sim-proxy"\n' \
+    > "$FAKE_BIN/make"
+chmod +x "$FAKE_BIN/make"
+export PATH="$FAKE_BIN:$PATH"
+
+# ── 3. Wrap guard_client to redirect port through proxy ───────────────────────
+# guard_client argument order: <host> <port> <n_requests> <n_threads> <user_id>
+# We replace arg $2 (the port) with the proxy listen port.
+REAL_CLIENT="$BUILD/guard_client"
+BACKUP="$BUILD/guard_client.bak"
+
+if [ -f "$BACKUP" ]; then
+    echo "[sim-proxy] WARNING: $BACKUP already exists — restoring before continuing."
+    mv "$BACKUP" "$REAL_CLIENT"
+fi
+
+cp "$REAL_CLIENT" "$BACKUP"
+
+# Write a shell wrapper in place of the binary.
+cat > "$REAL_CLIENT" << WRAPPER
+#!/usr/bin/env bash
+# sim-proxy shim: redirect port arg to proxy
+exec "$BACKUP" "\$1" "$PROXY_LISTEN" "\${@:3}"
+WRAPPER
+chmod +x "$REAL_CLIENT"
+
+# ── Cleanup on any exit ───────────────────────────────────────────────────────
+cleanup() {
+    local code=$?
+    echo ""
+    echo "[sim-proxy] shutting down..."
+    if [ -f "$BACKUP" ]; then
+        mv "$BACKUP" "$REAL_CLIENT"
+        echo "[sim-proxy] guard_client restored."
+    fi
+    rm -rf "$FAKE_BIN"
+    kill "$PROXY_PID" 2>/dev/null || true
+    wait "$PROXY_PID" 2>/dev/null || true
+    echo "[sim-proxy] done."
+    exit $code
+}
+trap cleanup EXIT INT TERM
+
+# ── 4. Start the proxy ────────────────────────────────────────────────────────
+python3 "$ROOT/proxy.py" \
+    --listen-port "$PROXY_LISTEN" \
+    --target "127.0.0.1:$TARGET_PORT" \
+    --http-port "$PROXY_HTTP" &
+PROXY_PID=$!
+
+# Give the proxy a moment to bind its ports before the script starts clients.
+sleep 0.5
+
+# Verify the proxy actually came up.
+if ! kill -0 "$PROXY_PID" 2>/dev/null; then
+    echo "[sim-proxy] ERROR: proxy failed to start. Is port $PROXY_LISTEN or $PROXY_HTTP in use?"
+    exit 1
+fi
+
+# ── 5. Open the visualizer in the browser ────────────────────────────────────
+# Derive phase number from the script filename (run_phase1.sh → 1, etc.)
+PHASE=$(basename "$SCRIPT" | grep -oE '[0-9]+' | head -1)
+PHASE="${PHASE:-4}"
+
+URL="http://127.0.0.1:$PROXY_HTTP/?phase=$PHASE&live=1"
+if command -v open &>/dev/null; then
+    open "$URL"          # macOS
+elif command -v xdg-open &>/dev/null; then
+    xdg-open "$URL"      # Linux
+else
+    echo "[sim-proxy] open $URL in your browser, then switch to Live mode."
+fi
+
+# ── 6. Run the phase script ───────────────────────────────────────────────────
+echo "[sim-proxy] running: $(basename "$SCRIPT") $*"
+echo ""
+bash "$SCRIPT" "$@"

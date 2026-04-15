@@ -176,6 +176,43 @@
   .log-entry .ts { color: var(--muted); margin-right: 5px; }
   .log-ok  { color: var(--green); }
   .log-rl  { color: var(--red); }
+
+  /* Live mode */
+  .src-toggle { display: flex; gap: 4px; margin-bottom: 10px; }
+  .src-btn {
+    flex: 1; padding: 5px 0; border-radius: 6px;
+    border: 1px solid var(--border); background: none;
+    color: var(--muted); font-family: inherit; font-size: 11px;
+    cursor: pointer; text-align: center; transition: all 0.15s;
+  }
+  .src-btn:hover { border-color: var(--accent); color: var(--text); }
+  .src-btn.active { background: var(--accent); border-color: var(--accent); color: #fff; }
+  .src-btn.active.live-active { background: var(--green); border-color: var(--green); }
+
+  #live-panel { display: none; }
+  .live-url-row { display: flex; gap: 6px; margin-bottom: 8px; }
+  .live-url-row input {
+    flex: 1; background: var(--bg); border: 1px solid var(--border);
+    border-radius: 4px; color: var(--text); font-family: inherit;
+    font-size: 11px; padding: 4px 7px;
+  }
+  .live-url-row input:focus { outline: none; border-color: var(--accent); }
+  .live-status-row {
+    font-size: 11px; color: var(--muted);
+    display: flex; align-items: center; gap: 6px; margin-top: 4px;
+  }
+  #live-dot { font-size: 9px; }
+  .dot-connected { color: var(--green); }
+  .dot-connecting { color: var(--yellow); }
+  .dot-off { color: var(--muted); }
+
+  .latency-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 6px; }
+  .latency-card {
+    background: var(--panel); border: 1px solid var(--border);
+    border-radius: 6px; padding: 6px 8px; text-align: center;
+  }
+  .latency-card .lbl { color: var(--muted); font-size: 9px; text-transform: uppercase; }
+  .latency-card .val { font-size: 13px; font-weight: 700; color: var(--accent); }
 </style>
 </head>
 <body>
@@ -199,7 +236,31 @@
   </div>
 
   <div class="sidebar">
+    <!-- Data source toggle + live controls -->
     <div class="section">
+      <h3>Data Source</h3>
+      <div class="src-toggle">
+        <button class="src-btn active" id="src-sim">&#9654; Simulated</button>
+        <button class="src-btn"        id="src-live">&#9679; Live</button>
+      </div>
+
+      <div id="live-panel">
+        <div class="live-url-row">
+          <input type="text" id="live-url" value="http://127.0.0.1:9098/events"
+                 spellcheck="false" placeholder="SSE endpoint URL">
+        </div>
+        <div class="btn-row">
+          <button class="primary" id="live-connect-btn">Connect</button>
+          <button class="secondary" id="live-reset-btn">Reset Stats</button>
+        </div>
+        <div class="live-status-row">
+          <span id="live-dot" class="dot-off">&#9679;</span>
+          <span id="live-status-txt">not connected</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="section" id="sim-controls">
       <h3>Simulation Controls</h3>
       <div class="control-row">
         <label style="color:#4f8ef7">alice req/s</label>
@@ -230,7 +291,7 @@
         <button class="primary" id="start-btn">&#9654; Start</button>
         <button class="secondary" id="reset-btn">Reset</button>
       </div>
-    </div>
+    </div><!-- end #sim-controls -->
 
     <div class="section">
       <h3>Overall Statistics</h3>
@@ -250,6 +311,23 @@
         <div class="stat-card c-yellow">
           <div class="lbl">RL Rate</div>
           <div class="val" id="stat-pct">0%</div>
+        </div>
+      </div>
+      <!-- Latency row: only visible in live mode -->
+      <div id="latency-section" style="display:none;margin-top:8px">
+        <div class="latency-grid">
+          <div class="latency-card">
+            <div class="lbl">p50 ms</div>
+            <div class="val" id="lat-p50">—</div>
+          </div>
+          <div class="latency-card">
+            <div class="lbl">p95 ms</div>
+            <div class="val" id="lat-p95">—</div>
+          </div>
+          <div class="latency-card">
+            <div class="lbl">p99 ms</div>
+            <div class="val" id="lat-p99">—</div>
+          </div>
         </div>
       </div>
     </div>
@@ -496,8 +574,7 @@ function drawFrame() {
     const x = from.x + (to.x - from.x) * p.t;
     const y = from.y + (to.y - from.y) * p.t;
 
-    let color = COLORS[p.userId] || '#4f8ef7';
-    if (p.status === 'ok') color = '#3ecf8e';
+    let color = '#3ecf8e';  // green until rate-limited
     if (p.status === 'rl') color = '#f56565';
 
     ctx.save();
@@ -578,6 +655,7 @@ function stepPackets(dt) {
   }
   for (const p of done) {
     S.packets = S.packets.filter(x => x.id !== p.id);
+    if (p.live) continue;  // live packets: stats already recorded in handleLiveEvent
     const accepted = p.status === 'ok';
     S.total++; accepted ? S.ok++ : S.rl++;
     if (S.workers[p.wi]) accepted ? S.workers[p.wi].ok++ : S.workers[p.wi].rl++;
@@ -735,13 +813,229 @@ document.querySelectorAll('.phase-tab').forEach(tab => {
     tab.classList.add('active');
     S.phase = +tab.dataset.phase;
     document.getElementById('phase-desc').innerHTML = PHASE_DESC[S.phase];
-    reset();
+    if (S.liveMode) { liveReset(); } else { reset(); }
   });
 });
 
 window.addEventListener('resize', () => { resize(); drawFrame(); });
 
+// ── Live Mode ─────────────────────────────────────────────────────────────────
+// Extra live-mode state stored directly on S.
+S.liveMode    = false;
+S.sse         = null;
+S.latencies   = [];     // rolling window of latency samples (ms)
+S.liveConnected = false;
+
+function setLiveStatus(state) {
+  // state: 'connected' | 'connecting' | 'off'
+  const dot = document.getElementById('live-dot');
+  const txt = document.getElementById('live-status-txt');
+  dot.className = `dot-${state}`;
+  txt.textContent = state === 'connected'  ? 'connected to proxy'
+                  : state === 'connecting' ? 'connecting…'
+                  : 'not connected';
+  S.liveConnected = (state === 'connected');
+}
+
+function startLive() {
+  const url = document.getElementById('live-url').value.trim();
+  if (!url) return;
+
+  setLiveStatus('connecting');
+  document.getElementById('live-connect-btn').textContent = 'Disconnect';
+
+  // Stop any running simulation first.
+  if (S.running && !S.liveMode) stop();
+
+  S.liveMode = true;
+  S.sse = new EventSource(url);
+
+  S.sse.onopen = () => {
+    setLiveStatus('connected');
+    document.getElementById('src-live').classList.add('live-active');
+    // Kick off the animation render loop.
+    if (!S.running) {
+      S.running = true;
+      S.lastTs  = null;
+      S.raf     = requestAnimationFrame(liveLoop);
+    }
+  };
+
+  S.sse.onerror = () => {
+    setLiveStatus('off');
+    document.getElementById('src-live').classList.remove('live-active');
+    // Keep trying — EventSource auto-reconnects.
+  };
+
+  S.sse.onmessage = e => {
+    try { handleLiveEvent(JSON.parse(e.data)); } catch (_) {}
+  };
+}
+
+function stopLive() {
+  if (S.sse) { S.sse.close(); S.sse = null; }
+  S.liveMode = false;
+  S.running  = false;
+  if (S.raf) { cancelAnimationFrame(S.raf); S.raf = null; }
+  setLiveStatus('off');
+  document.getElementById('live-connect-btn').textContent = 'Connect';
+  document.getElementById('src-live').classList.remove('live-active');
+}
+
+function liveReset() {
+  S.packets  = [];
+  S.total = 0; S.ok = 0; S.rl = 0;
+  S.latencies = [];
+  initState();
+  updateStats();
+  updateBuckets();
+  updateWorkers();
+  updateLatency();
+  document.getElementById('log-list').innerHTML = '';
+}
+
+// Called for every SSE message from the proxy.
+function handleLiveEvent(ev) {
+  if (ev.type === 'snapshot') {
+    // Initial stats burst when we first connect — sync counts.
+    S.total = ev.total || 0;
+    S.ok    = ev.ok    || 0;
+    S.rl    = ev.rl    || 0;
+    // Restore per-user token levels if proxy already has them.
+    if (ev.tokens) {
+      for (const [u, t] of Object.entries(ev.tokens)) {
+        if (S.users[u]) S.users[u].tokens = t;
+      }
+    }
+    updateStats();
+    updateBuckets();
+    return;
+  }
+
+  if (ev.type === 'tokens') {
+    // Real token count from coordinator log.
+    if (S.users[ev.user_id]) S.users[ev.user_id].tokens = ev.tokens;
+    updateBuckets();
+    return;
+  }
+
+  if (ev.type === 'response') {
+    const isOk  = ev.status === 'ok';
+    const numW  = S.phase < 3 ? 1 : 3;
+    const wi    = Math.floor(Math.random() * numW);  // approximate worker assignment
+
+    // Record stats.
+    S.total++;
+    isOk ? S.ok++ : S.rl++;
+    if (S.workers[wi]) { isOk ? S.workers[wi].ok++ : S.workers[wi].rl++; }
+
+    // Track latency.
+    if (typeof ev.latency_ms === 'number') {
+      S.latencies.push(ev.latency_ms);
+      if (S.latencies.length > 200) S.latencies.shift();
+      updateLatency();
+    }
+
+    // Spawn an animated packet for this real request.
+    S.pid++;
+    S.packets.push({
+      id:     S.pid,
+      userId: ev.user_id,
+      wi,
+      hops:   HOPS[S.phase],
+      hop:    0,
+      t:      0,
+      speed:  0.022 + Math.random() * 0.01,
+      status:  'pending',
+      outcome: isOk ? 'ok' : 'rl',
+      live:    true,    // flag: don't double-count stats on completion
+    });
+
+    addLog(ev.user_id, isOk);
+    updateStats();
+    updateWorkers();
+    return;
+  }
+}
+
+// Animation loop for live mode — no simulation spawning or token refill.
+function liveLoop(ts) {
+  if (!S.liveMode) return;
+  const dt = S.lastTs === null ? 0 : Math.min(ts - S.lastTs, 100);
+  S.lastTs = ts;
+
+  // Advance packets (live packets skip stat updates on completion).
+  const done = [];
+  for (const p of S.packets) {
+    p.t += p.speed * (dt / 16);
+    if (p.t >= 1) {
+      p.t = 0;
+      p.hop++;
+      // Reveal outcome at the same hop sim mode uses
+      if (p.outcome !== undefined) {
+        const revealAt = S.phase === 4 ? 3 : S.phase === 3 ? 2 : 1;
+        if (p.hop === revealAt) p.status = p.outcome;
+      }
+      if (p.hop >= p.hops.length) done.push(p);
+    }
+  }
+  S.packets = S.packets.filter(p => !done.includes(p));
+
+  drawFrame();
+
+  S.raf = requestAnimationFrame(liveLoop);
+}
+
+function updateLatency() {
+  if (!S.liveMode || S.latencies.length === 0) return;
+  const sorted = [...S.latencies].sort((a, b) => a - b);
+  const pct = p => sorted[Math.min(Math.floor(sorted.length * p / 100), sorted.length - 1)];
+  document.getElementById('lat-p50').textContent = pct(50).toFixed(1);
+  document.getElementById('lat-p95').textContent = pct(95).toFixed(1);
+  document.getElementById('lat-p99').textContent = pct(99).toFixed(1);
+}
+
+// Toggle between Simulated and Live sources.
+document.getElementById('src-sim').addEventListener('click', () => {
+  if (!S.liveMode) return;
+  stopLive();
+  document.getElementById('src-sim').classList.add('active');
+  document.getElementById('src-live').classList.remove('active');
+  document.getElementById('sim-controls').style.display = '';
+  document.getElementById('live-panel').style.display   = 'none';
+  document.getElementById('latency-section').style.display = 'none';
+  reset();
+});
+
+document.getElementById('src-live').addEventListener('click', () => {
+  if (S.liveMode) return;
+  document.getElementById('src-sim').classList.remove('active');
+  document.getElementById('src-live').classList.add('active');
+  document.getElementById('sim-controls').style.display = 'none';
+  document.getElementById('live-panel').style.display   = '';
+  document.getElementById('latency-section').style.display = '';
+  liveReset();
+  initState();
+  drawFrame();
+});
+
+document.getElementById('live-connect-btn').addEventListener('click', () => {
+  if (S.liveMode && S.sse) { stopLive(); }
+  else { startLive(); }
+});
+
+document.getElementById('live-reset-btn').addEventListener('click', liveReset);
+
 // ── Boot ──────────────────────────────────────────────────────────────────────
+// Allow sim-proxy (or a manual URL) to specify which phase to open on.
+const _params   = new URLSearchParams(window.location.search);
+const _urlPhase = parseInt(_params.get('phase'));
+if (_urlPhase >= 1 && _urlPhase <= 6) {
+  S.phase = _urlPhase;
+  document.querySelectorAll('.phase-tab').forEach(t => {
+    t.classList.toggle('active', +t.dataset.phase === S.phase);
+  });
+}
 resize();
 initState();
 updateStats();
@@ -749,6 +1043,19 @@ updateBuckets();
 updateWorkers();
 document.getElementById('phase-desc').innerHTML = PHASE_DESC[S.phase];
 drawFrame();
+
+// Auto-connect to Live mode when launched by sim-proxy (?live=1).
+if (_params.get('live') === '1') {
+  document.getElementById('src-sim').classList.remove('active');
+  document.getElementById('src-live').classList.add('active');
+  document.getElementById('sim-controls').style.display  = 'none';
+  document.getElementById('live-panel').style.display    = '';
+  document.getElementById('latency-section').style.display = '';
+  liveReset();
+  initState();
+  drawFrame();
+  startLive();
+}
 </script>
 </body>
 </html>
