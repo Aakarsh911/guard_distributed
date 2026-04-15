@@ -40,19 +40,24 @@ private:
     std::chrono::steady_clock::time_point last_refill_;
 };
 
-// Thread-safe per-user rate limiter.  One TokenBucket per user_id,
-// created on first sight with the configured capacity and refill rate.
 struct RateResult {
     bool   allowed;
     double tokens_remaining;
 };
 
-class RateLimiter {
+class IRateLimiter {
+public:
+    virtual ~IRateLimiter() = default;
+    virtual RateResult check(const std::string& user_id) = 0;
+    bool allow(const std::string& user_id) { return check(user_id).allowed; }
+};
+
+class RateLimiter : public IRateLimiter {
 public:
     RateLimiter(double capacity, double refill_per_sec)
         : capacity_(capacity), refill_per_sec_(refill_per_sec) {}
 
-    RateResult check(const std::string& user_id) {
+    RateResult check(const std::string& user_id) override {
         std::lock_guard<std::mutex> lk(mu_);
         auto it = buckets_.find(user_id);
         if (it == buckets_.end()) {
@@ -62,10 +67,6 @@ public:
         }
         bool ok = it->second.try_consume();
         return {ok, it->second.tokens()};
-    }
-
-    bool allow(const std::string& user_id) {
-        return check(user_id).allowed;
     }
 
 private:

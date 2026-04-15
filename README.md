@@ -11,11 +11,12 @@ generator fires concurrent requests and reports latency percentiles.
 ### Build
 
 ```bash
-make          # produces build/guard_server, build/guard_client, build/guard_lb
+make          # produces build/guard_server, build/guard_client, build/guard_lb, build/guard_coord
 make clean    # removes build/
 ```
 
-Requires: g++ with C++17 support, pthreads (Linux/macOS).
+Requires: g++ with C++17 support, pthreads (Linux/macOS),
+hiredis (`brew install hiredis` / `apt install libhiredis-dev`).
 
 ### Run manually
 
@@ -59,7 +60,7 @@ Every message on the wire is:
 | `guard_server` | `[port] [sim_ms] [coord_host:port]` | `8080 5` (no coord) |
 | `guard_client` | `[host] [port] [n_requests] [n_threads] [user_id]` | `127.0.0.1 8080 100 4 user1` |
 | `guard_lb` | `<port> <backend:port> [backend:port ...]` | (required) |
-| `guard_coord` | `[port] [rl_capacity] [rl_refill]` | `9200 10 5` |
+| `guard_coord` | `[port] [rl_capacity] [rl_refill] [redis_host:port]` | `9200 10 5` (in-memory) |
 
 ## Phase 2: Rate Limiting
 
@@ -162,3 +163,101 @@ bash scripts/run_phase4.sh
 Starts a coordinator (10-token / 2-per-sec), 3 workers, an LB, fires
 40 requests in a burst, and shows the coordinator's allowed/denied
 breakdown proving the limit is enforced globally across all workers.
+
+## Phase 5: Redis-Backed Coordinator State
+
+Adds an optional Redis backend to `guard_coord`. When enabled, all
+token-bucket state is stored in Redis via an atomic Lua script, so
+rate-limit state **survives coordinator restarts**. Without this, a
+coordinator crash would reset every user's bucket to full, letting
+them bypass their limit.
+
+```
+client -> LB -> worker ──rate_check──> coordinator ──EVALSHA──> Redis
+```
+
+The coordinator accepts an optional 4th argument `redis_host:port`.
+When omitted, it uses in-memory storage (backward-compatible with
+Phase 4).
+
+```bash
+# In-memory (Phase 4 behavior)
+./build/guard_coord 9200 10 5
+
+# Redis-backed (Phase 5)
+./build/guard_coord 9200 10 5 127.0.0.1:6379
+```
+
+Requires: Redis server running, `hiredis` library installed
+(`brew install hiredis` / `apt install libhiredis-dev`).
+
+### Run the Phase 5 demo
+
+```bash
+bash scripts/run_phase5.sh
+```
+
+Demonstrates state survival across a coordinator restart in 3 waves:
+1. Burst 10 requests → 5 allowed, 5 denied (drains the bucket)
+2. Kill coordinator, restart it, burst 3 immediately → all denied
+   (bucket was still empty in Redis)
+3. Sleep 3 s for refill, burst 8 → ~5 allowed (refill works from
+   Redis-stored timestamps)
+
+## Phase 6: MapReduce-Style Task Tracking + Fault-Tolerant Reassignment
+
+Adds task lifecycle tracking, worker heartbeats, and automatic
+reassignment of orphaned tasks — the same pattern the Google
+MapReduce paper uses for worker failures.
+
+```
+client -> LB -> worker ──rate_check──> coordinator
+                  |                        |
+                  |<────allowed────────────|
+                  |                        |
+                  |──task_start───────────>|  (register in-flight task)
+                  |     ... work ...       |
+                  |──task_done────────────>|  (mark complete)
+                  |                        |
+                  |  ♥ heartbeat (500ms) ──>|  (liveness signal)
+
+    worker crashes → heartbeat stops
+                                coordinator detects:
+                                  - task deadline expired
+                                  - worker heartbeat timeout
+                                coordinator ──reassign──> live worker
+                                                |  ... work ...
+                                                |──task_done──> coordinator
+```
+
+### New coordinator message types
+
+| Message | Direction | Purpose |
+|---------|-----------|---------|
+| `worker_register` | worker → coord | Register worker address for reassignment |
+| `heartbeat` | worker → coord | Periodic liveness signal (every 500 ms) |
+| `task_start` | worker → coord | Register in-flight task with deadline |
+| `task_done` | worker → coord | Mark task as completed |
+| `reassign` | coord → worker | Push orphaned task to a live worker |
+
+### How reassignment works
+
+1. Worker registers a task with `task_start` (includes `task_id`,
+   `worker_id`, `user_id`, `payload`, `deadline_ms`)
+2. Worker sends heartbeats every 500 ms
+3. If a worker dies, heartbeats stop
+4. Coordinator's scanner thread (runs every 500 ms) checks for tasks
+   where: deadline has expired AND worker's heartbeat has timed out
+5. Coordinator connects to a live worker and sends `reassign`
+6. Live worker executes the task and reports `task_done`
+
+### Run the Phase 6 demo
+
+```bash
+bash scripts/run_phase6.sh
+```
+
+Starts 3 workers with slow tasks (2 s each), sends requests directly
+to each worker, kills one mid-task, and shows the coordinator
+detecting the dead worker and reassigning its orphaned tasks to a
+live worker.
