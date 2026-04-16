@@ -18,10 +18,10 @@
 
 set -euo pipefail
 
-SCRIPT="${1:?usage: ./sim-proxy <phase-script>}"
-shift || true   # remaining args are forwarded to the phase script
-
 ROOT="$(cd "$(dirname "$0")" && pwd)"
+SCRIPT="${1:-$ROOT/scripts/run_phase1.sh}"
+shift 2>/dev/null || true   # remaining args are forwarded to the phase script
+
 BUILD="$ROOT/build"
 PROXY_LISTEN=9099
 PROXY_HTTP=9098
@@ -32,20 +32,43 @@ detect_backend_port() {
     # Extract the numeric value after '=' for the first matching variable.
     # Using sed to grab only what's on the right-hand side avoids false
     # positives when the variable name itself contains digits (e.g. S1_PORT).
-    _port_from() { grep -E "^\s*$1\s*=" "$SCRIPT" | head -1 | sed 's/.*=\s*//' | tr -d '[:space:]'; }
+    _port_from() { grep -E "^\s*$1\s*=" "$SCRIPT" 2>/dev/null | head -1 | sed 's/.*=\s*//' | tr -d '[:space:]' || true; }
     local port
     port=$(_port_from LB_PORT)                     # Phase 3/4/5: load balancer
     [ -z "$port" ] && port=$(_port_from PORT)       # Phase 1/2: single server
-    [ -z "$port" ] && port=$(_port_from SERVER_PORT)
+    [ -z "$port" ] && port=$(_port_from SERVER_PORT) || true
     [ -z "$port" ] && port=$(_port_from S1_PORT)    # Phase 6: direct-to-worker
     echo "${port:-8080}"
 }
 
+detect_coord_log() {
+    # Look for explicit COORD_LOG or LOG_COORD assignments in the script.
+    local log
+    log=$(grep -E "^\s*(COORD_LOG|LOG_COORD)\s*=" "$SCRIPT" 2>/dev/null | head -1 \
+          | sed "s/.*=\s*//; s/[\"' ]//g") || log=""
+    # Fall back to the inline redirect pattern: 2>"/tmp/guard_coord*.log"
+    if [ -z "$log" ]; then
+        log=$(grep -oE '/tmp/guard_coord[^ "]*\.log' "$SCRIPT" 2>/dev/null | head -1) || log=""
+    fi
+    echo "$log"
+}
+
+detect_capacity() {
+    # Parse RL_CAP (token bucket capacity) from the phase script.
+    # Strip the value from the assignment, then drop any trailing comment/whitespace.
+    grep -E "^\s*RL_CAP\s*=" "$SCRIPT" 2>/dev/null | head -1 \
+        | sed "s/.*=\s*//; s/[[:space:]].*//; s/[\"']//g" || true
+}
+
 TARGET_PORT=$(detect_backend_port)
+COORD_LOG=$(detect_coord_log)
+CAPACITY=$(detect_capacity)
 
 echo "[sim-proxy] target backend : 127.0.0.1:$TARGET_PORT"
 echo "[sim-proxy] proxy listener : 127.0.0.1:$PROXY_LISTEN"
 echo "[sim-proxy] visualizer     : http://127.0.0.1:$PROXY_HTTP/"
+[ -n "$COORD_LOG" ] && echo "[sim-proxy] coord log      : $COORD_LOG"
+[ -n "$CAPACITY"  ] && echo "[sim-proxy] bucket capacity: $CAPACITY"
 echo ""
 
 # ── 1. Build for real ─────────────────────────────────────────────────────────
@@ -93,6 +116,7 @@ cleanup() {
         echo "[sim-proxy] guard_client restored."
     fi
     rm -rf "$FAKE_BIN"
+    pkill -f 'guard_coord\|guard_server\|guard_lb' 2>/dev/null || true
     kill "$PROXY_PID" 2>/dev/null || true
     wait "$PROXY_PID" 2>/dev/null || true
     echo "[sim-proxy] done."
@@ -101,10 +125,11 @@ cleanup() {
 trap cleanup EXIT INT TERM
 
 # ── 4. Start the proxy ────────────────────────────────────────────────────────
-python3 "$ROOT/proxy.py" \
-    --listen-port "$PROXY_LISTEN" \
-    --target "127.0.0.1:$TARGET_PORT" \
-    --http-port "$PROXY_HTTP" &
+PROXY_ARGS=(--listen-port "$PROXY_LISTEN" --target "127.0.0.1:$TARGET_PORT" --http-port "$PROXY_HTTP" --exit-on-disconnect)
+[ -n "$COORD_LOG" ] && PROXY_ARGS+=(--coord-log "$COORD_LOG")
+[ -n "$CAPACITY"  ] && PROXY_ARGS+=(--capacity  "$CAPACITY")
+
+python3 "$ROOT/proxy.py" "${PROXY_ARGS[@]}" &
 PROXY_PID=$!
 
 # Give the proxy a moment to bind its ports before the script starts clients.
@@ -133,4 +158,11 @@ fi
 # ── 6. Run the phase script ───────────────────────────────────────────────────
 echo "[sim-proxy] running: $(basename "$SCRIPT") $*"
 echo ""
-bash "$SCRIPT" "$@"
+bash "$SCRIPT" "$@" || true
+
+echo ""
+echo "[sim-proxy] Script done — proxy is still live."
+echo "[sim-proxy] Click any phase tab (1–4) in the visualizer to auto-start its demo."
+echo "[sim-proxy] Press Ctrl-C to stop."
+echo ""
+wait "$PROXY_PID"

@@ -267,8 +267,14 @@ int main(int argc, char* argv[]) {
     std::unique_ptr<guard::IRateLimiter> limiter;
     if (!redis_addr.empty()) {
         auto hp = guard::parse_host_port(redis_addr);
-        limiter = std::make_unique<guard::RedisRateLimiter>(
-            hp.host, hp.port, rl_cap, rl_refill);
+        try {
+            limiter = std::make_unique<guard::RedisRateLimiter>(
+                hp.host, hp.port, rl_cap, rl_refill);
+        } catch (const std::exception& e) {
+            std::cerr << "[coord] FATAL: cannot connect to Redis at "
+                      << redis_addr << ": " << e.what() << "\n";
+            return 1;
+        }
         std::cerr << "[coord] using Redis backend at " << redis_addr << "\n";
     } else {
         limiter = std::make_unique<guard::RateLimiter>(rl_cap, rl_refill);

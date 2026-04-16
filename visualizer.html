@@ -15,138 +15,73 @@
     --yellow: #f6ad55;
     --text: #e2e8f0;
     --muted: #718096;
+    --redis: #e53e3e;
   }
   * { box-sizing: border-box; margin: 0; padding: 0; }
-
-  html, body {
-    height: 100%;
-    background: var(--bg);
-    color: var(--text);
-    font-family: 'SF Mono', 'Fira Code', monospace;
-    font-size: 13px;
-    overflow: hidden;
-  }
-
+  html, body { height: 100%; background: var(--bg); color: var(--text);
+    font-family: 'SF Mono', 'Fira Code', monospace; font-size: 13px; overflow: hidden; }
   body { display: flex; flex-direction: column; }
 
-  header {
-    flex-shrink: 0;
-    padding: 14px 24px;
-    border-bottom: 1px solid var(--border);
-    display: flex;
-    align-items: center;
-    gap: 16px;
-  }
+  header { flex-shrink: 0; padding: 14px 24px; border-bottom: 1px solid var(--border);
+    display: flex; align-items: center; gap: 16px; }
   header h1 { font-size: 18px; font-weight: 700; color: var(--accent); letter-spacing: 2px; }
   header span { color: var(--muted); font-size: 11px; }
 
-  .phase-tabs {
-    flex-shrink: 0;
-    display: flex;
-    gap: 4px;
-    padding: 10px 24px;
-    border-bottom: 1px solid var(--border);
-  }
-  .phase-tab {
-    padding: 5px 14px;
-    border-radius: 6px;
-    border: 1px solid var(--border);
-    background: none;
-    color: var(--muted);
-    cursor: pointer;
-    font-family: inherit;
-    font-size: 12px;
-    transition: all 0.15s;
-  }
+  .phase-tabs { flex-shrink: 0; display: flex; gap: 4px; padding: 10px 24px;
+    border-bottom: 1px solid var(--border); flex-wrap: wrap; }
+  .phase-tab { padding: 5px 14px; border-radius: 6px; border: 1px solid var(--border);
+    background: none; color: var(--muted); cursor: pointer; font-family: inherit;
+    font-size: 12px; transition: all 0.15s; }
   .phase-tab:hover { border-color: var(--accent); color: var(--text); }
   .phase-tab.active { background: var(--accent); border-color: var(--accent); color: #fff; }
 
-  .main {
-    flex: 1;
-    min-height: 0;
-    display: flex;
-  }
+  .main { flex: 1; min-height: 0; display: flex; }
 
-  .canvas-wrap {
-    flex: 1;
-    min-width: 0;
-    position: relative;
-    border-right: 1px solid var(--border);
-  }
+  .canvas-wrap { flex: 1; min-width: 0; position: relative; border-right: 1px solid var(--border); }
+  canvas { display: block; width: 100%; height: 100%; }
 
-  canvas {
-    display: block;
-    width: 100%;
-    height: 100%;
-  }
+  #node-overlays { position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; }
 
-  .phase-desc {
-    position: absolute;
-    bottom: 12px;
-    left: 12px;
-    background: var(--panel);
-    border: 1px solid var(--border);
-    border-radius: 8px;
-    padding: 10px 14px;
-    max-width: 420px;
-    font-size: 11px;
-    color: var(--muted);
-    line-height: 1.6;
-    pointer-events: none;
+  .node-btn {
+    position: absolute; pointer-events: auto;
+    padding: 3px 9px; border-radius: 4px;
+    font-family: 'SF Mono', 'Fira Code', monospace; font-size: 10px; font-weight: 700;
+    cursor: pointer; border: none; transform: translateX(-50%);
+    white-space: nowrap; transition: opacity 0.15s; letter-spacing: 0.5px;
+    line-height: 1.4;
   }
+  .node-btn:hover { opacity: 0.82; }
+  .node-btn.kill    { background: var(--red);   color: #fff; }
+  .node-btn.reboot  { background: var(--green); color: #0f1117; }
+  .node-btn.rebooting { background: var(--yellow); color: #0f1117; }
+
+  .phase-desc { position: absolute; bottom: 12px; left: 12px; background: var(--panel);
+    border: 1px solid var(--border); border-radius: 8px; padding: 10px 14px; max-width: 420px;
+    font-size: 11px; color: var(--muted); line-height: 1.6; pointer-events: none; }
   .phase-desc strong { color: var(--text); }
 
-  /* Sidebar */
-  .sidebar {
-    width: 300px;
-    flex-shrink: 0;
-    display: flex;
-    flex-direction: column;
-    overflow-y: auto;
-  }
+  .sidebar { width: 300px; flex-shrink: 0; display: flex; flex-direction: column; overflow-y: auto; }
 
-  .section {
-    padding: 14px 16px;
-    border-bottom: 1px solid var(--border);
-  }
-  .section h3 {
-    color: var(--muted);
-    font-size: 10px;
-    text-transform: uppercase;
-    letter-spacing: 1px;
-    margin-bottom: 10px;
-  }
+  .section { padding: 14px 16px; border-bottom: 1px solid var(--border); }
+  .section h3 { color: var(--muted); font-size: 10px; text-transform: uppercase;
+    letter-spacing: 1px; margin-bottom: 10px; }
 
-  .control-row {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    margin-bottom: 8px;
-  }
+  .control-row { display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px; }
   .control-row label { color: var(--text); font-size: 12px; }
   input[type=range] { width: 110px; accent-color: var(--accent); }
   .val-badge { min-width: 36px; text-align: right; color: var(--accent); font-size: 12px; }
 
   .btn-row { display: flex; gap: 8px; margin-top: 10px; }
-  button.primary {
-    flex: 1; padding: 8px; background: var(--accent);
-    border: none; border-radius: 6px; color: #fff;
-    font-family: inherit; font-size: 12px; cursor: pointer;
-  }
+  button.primary { flex: 1; padding: 8px; background: var(--accent); border: none;
+    border-radius: 6px; color: #fff; font-family: inherit; font-size: 12px; cursor: pointer; }
   button.primary:hover { opacity: 0.85; }
   button.primary.stop { background: var(--red); }
-  button.secondary {
-    padding: 8px 12px; background: none;
-    border: 1px solid var(--border); border-radius: 6px;
-    color: var(--muted); font-family: inherit; font-size: 12px; cursor: pointer;
-  }
+  button.secondary { padding: 8px 12px; background: none; border: 1px solid var(--border);
+    border-radius: 6px; color: var(--muted); font-family: inherit; font-size: 12px; cursor: pointer; }
   button.secondary:hover { border-color: var(--accent); color: var(--text); }
 
   .stat-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
-  .stat-card {
-    background: var(--panel); border: 1px solid var(--border);
-    border-radius: 6px; padding: 8px;
-  }
+  .stat-card { background: var(--panel); border: 1px solid var(--border); border-radius: 6px; padding: 8px; }
   .stat-card .lbl { color: var(--muted); font-size: 10px; text-transform: uppercase; margin-bottom: 2px; }
   .stat-card .val { font-size: 20px; font-weight: 700; }
   .stat-card.c-blue .val  { color: var(--accent); }
@@ -160,59 +95,74 @@
   .bar-fill { height: 100%; border-radius: 3px; transition: width 0.25s, background 0.25s; }
   .token-num { width: 24px; text-align: right; font-size: 11px; color: var(--muted); }
 
-  .worker-row {
-    display: flex; align-items: center; gap: 8px; margin-bottom: 6px;
-    background: var(--panel); border: 1px solid var(--border);
-    border-radius: 6px; padding: 7px 10px;
-  }
-  .w-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--green); }
+  .worker-row { display: flex; align-items: center; gap: 8px; margin-bottom: 6px;
+    background: var(--panel); border: 1px solid var(--border); border-radius: 6px; padding: 7px 10px; }
+  .w-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--green); flex-shrink: 0; }
+  .w-dot.dead { background: var(--red); }
   .w-lbl { flex: 1; font-size: 12px; }
+  .w-lbl.dead { color: var(--muted); text-decoration: line-through; }
   .w-stats { font-size: 11px; }
   .w-ok { color: var(--green); margin-right: 4px; }
   .w-rl { color: var(--red); }
+  .w-dead-badge { font-size: 10px; color: var(--red); margin-left: 4px; }
 
   .log-list { max-height: 150px; overflow-y: auto; font-size: 11px; line-height: 1.7; }
   .log-entry { border-bottom: 1px solid #1e2030; }
   .log-entry .ts { color: var(--muted); margin-right: 5px; }
-  .log-ok  { color: var(--green); }
-  .log-rl  { color: var(--red); }
+  .log-ok   { color: var(--green); }
+  .log-rl   { color: var(--red); }
+  .log-sys  { color: var(--yellow); }
+  .log-info { color: var(--accent); }
 
-  /* Live mode */
   .src-toggle { display: flex; gap: 4px; margin-bottom: 10px; }
-  .src-btn {
-    flex: 1; padding: 5px 0; border-radius: 6px;
-    border: 1px solid var(--border); background: none;
-    color: var(--muted); font-family: inherit; font-size: 11px;
-    cursor: pointer; text-align: center; transition: all 0.15s;
-  }
+  .src-btn { flex: 1; padding: 5px 0; border-radius: 6px; border: 1px solid var(--border);
+    background: none; color: var(--muted); font-family: inherit; font-size: 11px;
+    cursor: pointer; text-align: center; transition: all 0.15s; }
   .src-btn:hover { border-color: var(--accent); color: var(--text); }
   .src-btn.active { background: var(--accent); border-color: var(--accent); color: #fff; }
   .src-btn.active.live-active { background: var(--green); border-color: var(--green); }
 
   #live-panel { display: none; }
   .live-url-row { display: flex; gap: 6px; margin-bottom: 8px; }
-  .live-url-row input {
-    flex: 1; background: var(--bg); border: 1px solid var(--border);
-    border-radius: 4px; color: var(--text); font-family: inherit;
-    font-size: 11px; padding: 4px 7px;
-  }
+  .live-url-row input { flex: 1; background: var(--bg); border: 1px solid var(--border);
+    border-radius: 4px; color: var(--text); font-family: inherit; font-size: 11px; padding: 4px 7px; }
   .live-url-row input:focus { outline: none; border-color: var(--accent); }
-  .live-status-row {
-    font-size: 11px; color: var(--muted);
-    display: flex; align-items: center; gap: 6px; margin-top: 4px;
-  }
+  .live-status-row { font-size: 11px; color: var(--muted); display: flex; align-items: center; gap: 6px; margin-top: 4px; }
   #live-dot { font-size: 9px; }
   .dot-connected { color: var(--green); }
   .dot-connecting { color: var(--yellow); }
   .dot-off { color: var(--muted); }
 
   .latency-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 6px; }
-  .latency-card {
-    background: var(--panel); border: 1px solid var(--border);
-    border-radius: 6px; padding: 6px 8px; text-align: center;
-  }
+  .latency-card { background: var(--panel); border: 1px solid var(--border);
+    border-radius: 6px; padding: 6px 8px; text-align: center; }
   .latency-card .lbl { color: var(--muted); font-size: 9px; text-transform: uppercase; }
   .latency-card .val { font-size: 13px; font-weight: 700; color: var(--accent); }
+
+  /* Phase 5 coordinator status banner */
+  .coord-banner { font-size: 10px; padding: 5px 8px; border-radius: 4px; margin-bottom: 8px;
+    display: none; line-height: 1.5; }
+  .coord-banner.dead  { display: block; background: rgba(245,101,101,0.1); color: var(--red);
+    border: 1px solid rgba(245,101,101,0.3); }
+  .coord-banner.redis { display: block; background: rgba(62,207,142,0.08); color: var(--green);
+    border: 1px solid rgba(62,207,142,0.25); }
+
+  /* Phase 6 task tracker */
+  .task-row { display: flex; align-items: center; gap: 5px; padding: 4px 6px; border-radius: 4px;
+    background: var(--panel); border: 1px solid var(--border); margin-bottom: 4px; font-size: 10px;
+    transition: border-color 0.2s; }
+  .task-row.orphaned  { border-color: var(--red); }
+  .task-row.reassigned { border-color: var(--accent); }
+  .task-row.done      { opacity: 0.45; }
+  .task-id  { color: var(--muted); width: 68px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .task-worker { width: 36px; color: var(--accent); font-size: 9px; }
+  .task-status { flex: 1; text-align: right; font-size: 10px; }
+  .task-status.running    { color: var(--yellow); }
+  .task-status.done       { color: var(--green); }
+  .task-status.orphaned   { color: var(--red); }
+  .task-status.reassigned { color: var(--accent); }
+  .task-bar-wrap { width: 40px; height: 4px; background: var(--border); border-radius: 2px; overflow: hidden; }
+  .task-bar { height: 100%; background: var(--yellow); border-radius: 2px; transition: width 0.1s; }
 </style>
 </head>
 <body>
@@ -227,23 +177,25 @@
   <button class="phase-tab" data-phase="2">Phase 2: Local Rate Limit</button>
   <button class="phase-tab" data-phase="3">Phase 3: Load Balancer</button>
   <button class="phase-tab active" data-phase="4">Phase 4: Coordinator</button>
+  <button class="phase-tab" data-phase="5">Phase 5: Redis State</button>
+  <button class="phase-tab" data-phase="6">Phase 6: Fault Tolerance</button>
+  <button class="phase-tab" data-phase="7">Phase 7: Full System</button>
 </div>
 
 <div class="main">
   <div class="canvas-wrap">
     <canvas id="cv"></canvas>
+    <div id="node-overlays"></div>
     <div class="phase-desc" id="phase-desc"></div>
   </div>
 
   <div class="sidebar">
-    <!-- Data source toggle + live controls -->
     <div class="section">
       <h3>Data Source</h3>
       <div class="src-toggle">
         <button class="src-btn active" id="src-sim">&#9654; Simulated</button>
         <button class="src-btn"        id="src-live">&#9679; Live</button>
       </div>
-
       <div id="live-panel">
         <div class="live-url-row">
           <input type="text" id="live-url" value="http://127.0.0.1:9098/events"
@@ -287,47 +239,46 @@
         <input type="range" id="refill-rate" min="1" max="10" value="3">
         <span class="val-badge" id="refill-rate-val">3/s</span>
       </div>
+      <!-- Phase 6 only -->
+      <div class="control-row" id="task-dur-row" style="display:none">
+        <label>Task duration</label>
+        <input type="range" id="task-dur" min="500" max="6000" step="500" value="2000">
+        <span class="val-badge" id="task-dur-val">2s</span>
+      </div>
       <div class="btn-row">
         <button class="primary" id="start-btn">&#9654; Start</button>
         <button class="secondary" id="reset-btn">Reset</button>
       </div>
-    </div><!-- end #sim-controls -->
+    </div>
+
+    <!-- Phase 5: coord status -->
+    <div class="section" id="coord-status-section" style="display:none">
+      <h3>Coordinator State</h3>
+      <div class="coord-banner" id="coord-banner"></div>
+      <div id="redis-state-display"></div>
+    </div>
 
     <div class="section">
       <h3>Overall Statistics</h3>
       <div class="stat-grid">
         <div class="stat-card c-blue">
-          <div class="lbl">Total Sent</div>
-          <div class="val" id="stat-total">0</div>
+          <div class="lbl">Total Sent</div><div class="val" id="stat-total">0</div>
         </div>
         <div class="stat-card c-green">
-          <div class="lbl">Accepted</div>
-          <div class="val" id="stat-ok">0</div>
+          <div class="lbl">Accepted</div><div class="val" id="stat-ok">0</div>
         </div>
         <div class="stat-card c-red">
-          <div class="lbl">Rate Limited</div>
-          <div class="val" id="stat-rl">0</div>
+          <div class="lbl">Rate Limited</div><div class="val" id="stat-rl">0</div>
         </div>
         <div class="stat-card c-yellow">
-          <div class="lbl">RL Rate</div>
-          <div class="val" id="stat-pct">0%</div>
+          <div class="lbl">RL Rate</div><div class="val" id="stat-pct">0%</div>
         </div>
       </div>
-      <!-- Latency row: only visible in live mode -->
       <div id="latency-section" style="display:none;margin-top:8px">
         <div class="latency-grid">
-          <div class="latency-card">
-            <div class="lbl">p50 ms</div>
-            <div class="val" id="lat-p50">—</div>
-          </div>
-          <div class="latency-card">
-            <div class="lbl">p95 ms</div>
-            <div class="val" id="lat-p95">—</div>
-          </div>
-          <div class="latency-card">
-            <div class="lbl">p99 ms</div>
-            <div class="val" id="lat-p99">—</div>
-          </div>
+          <div class="latency-card"><div class="lbl">p50 ms</div><div class="val" id="lat-p50">—</div></div>
+          <div class="latency-card"><div class="lbl">p95 ms</div><div class="val" id="lat-p95">—</div></div>
+          <div class="latency-card"><div class="lbl">p99 ms</div><div class="val" id="lat-p99">—</div></div>
         </div>
       </div>
     </div>
@@ -338,6 +289,12 @@
 
     <div class="section" id="worker-section">
       <h3>Workers</h3>
+    </div>
+
+    <!-- Phase 6 task tracker -->
+    <div class="section" id="task-section" style="display:none">
+      <h3>Task Tracker</h3>
+      <div id="task-list"></div>
     </div>
 
     <div class="section" style="flex:1">
@@ -357,15 +314,22 @@ const PHASE_DESC = {
   1: '<strong>Phase 1 — Single Server:</strong> One guard_server handles all requests directly with no rate limiting. Simple but not scalable.',
   2: '<strong>Phase 2 — Local Rate Limiting:</strong> The server maintains a per-user token bucket locally. Rate limits are enforced per-server — users routed to different servers could bypass them.',
   3: '<strong>Phase 3 — Load Balancer:</strong> guard_lb distributes requests round-robin. Rate limits are still local per worker, so a user can consume up to 3× their quota across workers.',
-  4: '<strong>Phase 4 — Central Coordinator:</strong> guard_coord holds the single source of truth for token buckets. Every worker checks with the coordinator before processing — true system-wide rate limiting.',
+  4: '<strong>Phase 4 — Central Coordinator:</strong> guard_coord holds the single source of truth for token buckets. Every worker checks with the coordinator before processing — true system-wide rate limiting. <em>Kill the coordinator to see fail-closed behavior (in-memory state is lost on reboot).</em>',
+  5: '<strong>Phase 5 — Redis-Backed State:</strong> All token bucket state is stored in Redis via an atomic Lua script. When the coordinator is killed and rebooted, state is <em>restored from Redis</em> — users cannot bypass limits by crashing the coordinator. Kill and reboot the coordinator to see the difference.',
+  6: '<strong>Phase 6 — Fault-Tolerant Task Reassignment:</strong> Workers register in-flight tasks and send heartbeats every 500 ms. When a worker dies, the load balancer automatically retries and routes new traffic to live workers — requests keep flowing. The coordinator then detects the missing heartbeat, finds orphaned tasks, and reassigns them. Kill any worker to see both effects.',
+  7: '<strong>Phase 7 — Full System:</strong> Redis-backed coordinator state (Phase 5) <em>combined with</em> worker fault-tolerant task reassignment (Phase 6). Kill the coordinator to see Redis preserve its state; kill any worker to see the LB route around it and orphaned tasks get reassigned. The complete production-grade GUARD system.',
 };
 
-// For each phase: list of hops a packet makes
+// Hops per phase. Phases 5 and 6 share the same network path as 4;
+// extra behavior (Redis, heartbeats, tasks) is shown as side-channel animation.
 const HOPS = {
   1: ['c→s', 's→c'],
   2: ['c→s', 's→c'],
   3: ['c→lb', 'lb→w', 'w→lb', 'lb→c'],
   4: ['c→lb', 'lb→w', 'w→coord', 'coord→w', 'w→lb', 'lb→c'],
+  5: ['c→lb', 'lb→w', 'w→coord', 'coord→w', 'w→lb', 'lb→c'],
+  6: ['c→lb', 'lb→w', 'w→coord', 'coord→w', 'w→lb', 'lb→c'],
+  7: ['c→lb', 'lb→w', 'w→coord', 'coord→w', 'w→lb', 'lb→c'],
 };
 
 // ── State ─────────────────────────────────────────────────────────────────────
@@ -376,61 +340,88 @@ const S = {
   spawnAccs: { alice: 0, bob: 0, carol: 0 },
   bucketCap: 10,
   refillRate: 3,
-  users: {},       // { name: { tokens } }
-  workers: [],     // [{ ok, rl }]
+  users: {},
+  workers: [],
   packets: [],
   total: 0, ok: 0, rl: 0,
   pid: 0,
   raf: null,
   lastTs: null,
+
+  // Phase 5
+  coordAlive:  true,
+  redisState:  {},   // persisted snapshot: { user: tokens }
+
+  // Phase 6
+  workerAlive:  [true, true, true],
+  hbAccs:       [0, 0, 0],   // heartbeat spawn accumulators (ms)
+  heartbeats:   [],           // [{x,y,tx,ty,t,speed,wi}]
+  tasks:        [],           // [{id,userId,wi,startedAt,duration,status,reassignedTo}]
+  taskIdCtr:    0,
+  taskDuration: 2000,         // ms
+  scanAcc:      0,            // coordinator scanner accumulator
+  hbInterval:   1800,         // ms between heartbeat pulses
+
+  // Phase 5: Redis animation pulses
+  redisPulses:  [],           // [{x,y,tx,ty,t,speed,phase:'out'|'in'}]
+
+  // Live mode
+  liveMode:    false,
+  sse:         null,
+  latencies:   [],
+  liveConnected: false,
 };
 
 // ── Layout ────────────────────────────────────────────────────────────────────
-// Returns node positions for a given canvas size
 function layout(phase, cw, ch) {
   const cx = ch / 2;
   const nodes = {};
-
-  nodes.client = { x: cw * 0.08, y: cx, label: 'guard_client', sub: ['multi-thread', 'load gen'], color: '#4f8ef7' };
+  nodes.client = { x: cw * 0.07, y: cx, label: 'guard_client', sub: ['multi-thread', 'load gen'], color: '#4f8ef7' };
 
   if (phase <= 2) {
     nodes.server = { x: cw * 0.60, y: cx, label: 'guard_server', sub: [':8080', 'worker'], color: '#9f7aea' };
   }
-
   if (phase === 3) {
     nodes.lb = { x: cw * 0.38, y: cx, label: 'guard_lb', sub: [':9100', 'round-robin'], color: '#f6ad55' };
     const spread = 2 * 90;
-    nodes.workers = [0,1,2].map((i) => ({
+    nodes.workers = [0,1,2].map(i => ({
       x: cw * 0.68, y: cx - spread/2 + i*90,
       label: 'guard_server', sub: [`:${PORTS[i]}`, 'worker'], color: '#9f7aea',
     }));
   }
-
-  if (phase === 4) {
+  if (phase === 4 || phase === 6) {
     nodes.lb = { x: cw * 0.33, y: cx, label: 'guard_lb', sub: [':9100', 'round-robin'], color: '#f6ad55' };
     const spread = 2 * 90;
-    nodes.workers = [0,1,2].map((i) => ({
+    nodes.workers = [0,1,2].map(i => ({
       x: cw * 0.58, y: cx - spread/2 + i*90,
       label: 'guard_server', sub: [`:${PORTS[i]}`, 'worker'], color: '#9f7aea',
     }));
     nodes.coord = { x: cw * 0.86, y: cx, label: 'guard_coord', sub: [':9200', 'token buckets'], color: '#3ecf8e' };
   }
-
+  if (phase === 5 || phase === 7) {
+    nodes.lb = { x: cw * 0.26, y: cx, label: 'guard_lb', sub: [':9100', 'round-robin'], color: '#f6ad55' };
+    const spread = 2 * 90;
+    nodes.workers = [0,1,2].map(i => ({
+      x: cw * 0.48, y: cx - spread/2 + i*90,
+      label: 'guard_server', sub: [`:${PORTS[i]}`, 'worker'], color: '#9f7aea',
+    }));
+    nodes.coord = { x: cw * 0.72, y: cx, label: 'guard_coord', sub: [':9200', S.coordAlive ? 'token buckets' : '⚠ DEAD'], color: S.coordAlive ? '#3ecf8e' : '#f56565' };
+    nodes.redis = { x: cw * 0.92, y: cx, label: 'Redis', sub: [':6379', 'token state'], color: '#e53e3e' };
+  }
   return nodes;
 }
 
-// Returns {from, to} for a given hop name and worker index
 function hopEndpoints(hop, nodes, wi) {
   const w = nodes.workers ? nodes.workers[wi] : nodes.server;
   const map = {
-    'c→s':    [nodes.client, nodes.server],
-    's→c':    [nodes.server, nodes.client],
-    'c→lb':   [nodes.client, nodes.lb],
-    'lb→c':   [nodes.lb,    nodes.client],
-    'lb→w':   [nodes.lb,    w],
-    'w→lb':   [w,           nodes.lb],
-    'w→coord':[w,           nodes.coord],
-    'coord→w':[nodes.coord, w],
+    'c→s':     [nodes.client, nodes.server],
+    's→c':     [nodes.server, nodes.client],
+    'c→lb':    [nodes.client, nodes.lb],
+    'lb→c':    [nodes.lb,     nodes.client],
+    'lb→w':    [nodes.lb,     w],
+    'w→lb':    [w,            nodes.lb],
+    'w→coord': [w,            nodes.coord],
+    'coord→w': [nodes.coord,  w],
   };
   return map[hop] || [nodes.client, w];
 }
@@ -445,23 +436,19 @@ function resize() {
   cv.height = rect.height * devicePixelRatio;
   cv.style.width  = rect.width  + 'px';
   cv.style.height = rect.height + 'px';
+  updateOverlays();
 }
 
 function drawRoundRect(x, y, w, h, r) {
   ctx.beginPath();
-  ctx.moveTo(x + r, y);
-  ctx.lineTo(x + w - r, y);
-  ctx.arcTo(x + w, y, x + w, y + r, r);
-  ctx.lineTo(x + w, y + h - r);
-  ctx.arcTo(x + w, y + h, x + w - r, y + h, r);
-  ctx.lineTo(x + r, y + h);
-  ctx.arcTo(x, y + h, x, y + h - r, r);
-  ctx.lineTo(x, y + r);
-  ctx.arcTo(x, y, x + r, y, r);
+  ctx.moveTo(x + r, y); ctx.lineTo(x + w - r, y); ctx.arcTo(x + w, y, x + w, y + r, r);
+  ctx.lineTo(x + w, y + h - r); ctx.arcTo(x + w, y + h, x + w - r, y + h, r);
+  ctx.lineTo(x + r, y + h); ctx.arcTo(x, y + h, x, y + h - r, r);
+  ctx.lineTo(x, y + r); ctx.arcTo(x, y, x + r, y, r);
   ctx.closePath();
 }
 
-function drawArrow(x1, y1, x2, y2, dashed) {
+function drawArrow(x1, y1, x2, y2, dashed, color) {
   const dx = x2 - x1, dy = y2 - y1;
   const len = Math.sqrt(dx*dx + dy*dy);
   if (len < 1) return;
@@ -469,82 +456,121 @@ function drawArrow(x1, y1, x2, y2, dashed) {
   const pad = 58;
   const sx = x1 + ux*pad, sy = y1 + uy*pad;
   const ex = x2 - ux*pad, ey = y2 - uy*pad;
+  const c = color || '#3a3d4a';
 
   ctx.save();
-  ctx.strokeStyle = '#3a3d4a';
-  ctx.lineWidth = 1.5;
+  ctx.strokeStyle = c; ctx.lineWidth = 1.5;
   if (dashed) ctx.setLineDash([6, 4]);
-  ctx.beginPath();
-  ctx.moveTo(sx, sy);
-  ctx.lineTo(ex, ey);
-  ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(sx, sy); ctx.lineTo(ex, ey); ctx.stroke();
   ctx.setLineDash([]);
-
-  // arrowhead
   const aw = 7;
-  ctx.fillStyle = '#3a3d4a';
+  ctx.fillStyle = c;
   ctx.beginPath();
   ctx.moveTo(ex, ey);
   ctx.lineTo(ex - ux*aw + uy*aw*0.5, ey - uy*aw - ux*aw*0.5);
   ctx.lineTo(ex - ux*aw - uy*aw*0.5, ey - uy*aw + ux*aw*0.5);
-  ctx.closePath();
+  ctx.closePath(); ctx.fill();
+  ctx.restore();
+}
+
+function drawNode(node, opts) {
+  const dead = opts && opts.dead;
+  const NW = 110, NH = 60;
+  const x = node.x - NW/2, y = node.y - NH/2;
+  const color = dead ? '#4a5568' : node.color;
+
+  ctx.save();
+  drawRoundRect(x, y, NW, NH, 10);
+  ctx.fillStyle = dead ? '#141620' : '#1a1d27';
+  ctx.fill();
+  ctx.strokeStyle = color;
+  ctx.lineWidth = dead ? 1.5 : 2;
+  if (dead) ctx.setLineDash([4, 3]);
+  ctx.stroke();
+  ctx.setLineDash([]);
+
+  ctx.fillStyle = color;
+  ctx.font = `bold 12px 'SF Mono', monospace`;
+  ctx.textAlign = 'center';
+  ctx.fillText(node.label, node.x, node.y - 8);
+  ctx.fillStyle = dead ? '#4a5568' : '#718096';
+  ctx.font = `10px 'SF Mono', monospace`;
+  node.sub.forEach((line, i) => ctx.fillText(line, node.x, node.y + 7 + i * 13));
+  ctx.restore();
+}
+
+function drawRedisNode(node) {
+  const NW = 90, NH = 52;
+  const x = node.x - NW/2, y = node.y - NH/2;
+  ctx.save();
+  drawRoundRect(x, y, NW, NH, 8);
+  ctx.fillStyle = '#1a1014';
+  ctx.fill();
+  ctx.strokeStyle = '#e53e3e';
+  ctx.lineWidth = 2;
+  ctx.stroke();
+  ctx.fillStyle = '#e53e3e';
+  ctx.font = `bold 13px 'SF Mono', monospace`;
+  ctx.textAlign = 'center';
+  ctx.fillText('Redis', node.x, node.y - 5);
+  ctx.fillStyle = '#718096';
+  ctx.font = `10px 'SF Mono', monospace`;
+  node.sub.forEach((line, i) => ctx.fillText(line, node.x, node.y + 9 + i * 13));
+  ctx.restore();
+}
+
+function drawHeartbeatPulse(p) {
+  const alpha = Math.max(0, 1 - p.t);
+  ctx.save();
+  ctx.globalAlpha = alpha * 0.9;
+  ctx.shadowColor = '#3ecf8e';
+  ctx.shadowBlur = 6;
+  ctx.beginPath();
+  ctx.arc(p.cx, p.cy, 4, 0, Math.PI * 2);
+  ctx.fillStyle = '#3ecf8e';
   ctx.fill();
   ctx.restore();
 }
 
-function drawNode(node) {
-  const NW = 110, NH = 60;
-  const x = node.x - NW/2;
-  const y = node.y - NH/2;
-
+function drawRedisPulse(p, nodes) {
+  if (!nodes.redis || !nodes.coord) return;
+  const from = p.dir === 'out' ? nodes.coord : nodes.redis;
+  const to   = p.dir === 'out' ? nodes.redis : nodes.coord;
+  const x = from.x + (to.x - from.x) * p.t;
+  const y = from.y + (to.y - from.y) * p.t;
   ctx.save();
-  drawRoundRect(x, y, NW, NH, 10);
-  ctx.fillStyle = '#1a1d27';
+  ctx.shadowColor = '#e53e3e';
+  ctx.shadowBlur = 8;
+  ctx.beginPath();
+  ctx.arc(x, y, 4, 0, Math.PI * 2);
+  ctx.fillStyle = '#e53e3e';
   ctx.fill();
-  ctx.strokeStyle = node.color;
-  ctx.lineWidth = 2;
-  ctx.stroke();
-
-  ctx.fillStyle = node.color;
-  ctx.font = `bold 12px 'SF Mono', monospace`;
-  ctx.textAlign = 'center';
-  ctx.fillText(node.label, node.x, node.y - 8);
-
-  ctx.fillStyle = '#718096';
-  ctx.font = `10px 'SF Mono', monospace`;
-  node.sub.forEach((line, i) => {
-    ctx.fillText(line, node.x, node.y + 7 + i * 13);
-  });
   ctx.restore();
 }
 
 function drawFrame() {
   const dpr = devicePixelRatio;
   ctx.clearRect(0, 0, cv.width, cv.height);
-
-  // Scale once so all drawing functions use logical (CSS) coordinates
   ctx.save();
   ctx.scale(dpr, dpr);
 
-  const cw = cv.width / dpr;
-  const ch = cv.height / dpr;
+  const cw = cv.width / dpr, ch = cv.height / dpr;
   const nodes = layout(S.phase, cw, ch);
 
-  // Draw edges
+  // Edges
   if (S.phase <= 2) {
     drawArrow(nodes.client.x, nodes.client.y, nodes.server.x, nodes.server.y, false);
   }
   if (S.phase >= 3 && nodes.lb) {
     drawArrow(nodes.client.x, nodes.client.y, nodes.lb.x, nodes.lb.y, false);
-    for (const w of nodes.workers) {
-      drawArrow(nodes.lb.x, nodes.lb.y, w.x, w.y, false);
-    }
+    for (const w of nodes.workers) drawArrow(nodes.lb.x, nodes.lb.y, w.x, w.y, false);
   }
-  if (S.phase === 4 && nodes.coord) {
+  if ((S.phase === 4 || S.phase === 5 || S.phase === 6 || S.phase === 7) && nodes.coord) {
     for (const w of nodes.workers) {
-      drawArrow(w.x, w.y, nodes.coord.x, nodes.coord.y, true);
+      const dead = (S.phase === 6 || S.phase === 7) && !S.workerAlive[nodes.workers.indexOf(w)];
+      drawArrow(w.x, w.y, nodes.coord.x, nodes.coord.y, true, dead ? '#2a2d3a' : undefined);
     }
-    // edge label "rate_check"
+    // edge label
     const midW = nodes.workers[1];
     const mx = (midW.x + nodes.coord.x) / 2;
     const my = (midW.y + nodes.coord.y) / 2 - 10;
@@ -552,49 +578,94 @@ function drawFrame() {
     ctx.fillStyle = '#4a5568';
     ctx.font = `9px 'SF Mono', monospace`;
     ctx.textAlign = 'center';
-    ctx.fillText('rate_check', mx, my);
+    ctx.fillText((S.phase === 6 || S.phase === 7) ? 'rate_check / heartbeat' : 'rate_check', mx, my);
+    ctx.restore();
+  }
+  // Phase 5: Redis edge
+  if ((S.phase === 5 || S.phase === 7) && nodes.redis && nodes.coord) {
+    drawArrow(nodes.coord.x, nodes.coord.y, nodes.redis.x, nodes.redis.y, true, '#4a3030');
+    ctx.save();
+    ctx.fillStyle = '#6b3030';
+    ctx.font = `9px 'SF Mono', monospace`;
+    ctx.textAlign = 'center';
+    const rx = (nodes.coord.x + nodes.redis.x) / 2;
+    const ry = (nodes.coord.y + nodes.redis.y) / 2 - 10;
+    ctx.fillText('EVALSHA', rx, ry);
     ctx.restore();
   }
 
-  // Draw nodes
+  // Nodes
   if (S.phase <= 2) {
     drawNode(nodes.client);
     drawNode(nodes.server);
   } else {
     drawNode(nodes.client);
     drawNode(nodes.lb);
-    for (const w of nodes.workers) drawNode(w);
-    if (nodes.coord) drawNode(nodes.coord);
+    for (let i = 0; i < nodes.workers.length; i++) {
+      const dead = (S.phase === 6 || S.phase === 7) && !S.workerAlive[i];
+      drawNode(nodes.workers[i], { dead });
+    }
+    if (nodes.coord) {
+      drawNode(nodes.coord, { dead: !S.coordAlive });
+    }
+    if (nodes.redis) drawRedisNode(nodes.redis);
   }
 
-  // Draw packets
+  // Heartbeat pulses (phase 6)
+  for (const p of S.heartbeats) drawHeartbeatPulse(p);
+
+  // Redis pulses (phase 5)
+  for (const p of S.redisPulses) drawRedisPulse(p, nodes);
+
+  // Phase 6: task progress rings on workers
+  if (S.phase === 6 || S.phase === 7) {
+    for (let wi = 0; wi < 3; wi++) {
+      const activeTasks = S.tasks.filter(t => t.wi === wi && t.status === 'running');
+      if (activeTasks.length > 0 && S.workerAlive[wi]) {
+        const w = nodes.workers[wi];
+        ctx.save();
+        ctx.strokeStyle = '#f6ad55';
+        ctx.lineWidth = 2;
+        ctx.globalAlpha = 0.5;
+        ctx.beginPath();
+        ctx.arc(w.x, w.y, 40, 0, Math.PI * 2);
+        ctx.stroke();
+        ctx.fillStyle = '#f6ad55';
+        ctx.font = `9px 'SF Mono', monospace`;
+        ctx.textAlign = 'center';
+        ctx.globalAlpha = 0.7;
+        ctx.fillText(`${activeTasks.length} task${activeTasks.length > 1 ? 's' : ''}`, w.x, w.y + 52);
+        ctx.restore();
+      }
+    }
+  }
+
+  // Packets
   for (const p of S.packets) {
     const [from, to] = hopEndpoints(p.hops[p.hop], nodes, p.wi);
     if (!from || !to) continue;
     const x = from.x + (to.x - from.x) * p.t;
     const y = from.y + (to.y - from.y) * p.t;
 
-    let color = '#3ecf8e';  // green until rate-limited
+    let color = p.type === 'reassign' ? '#4f8ef7' : '#3ecf8e';
     if (p.status === 'rl') color = '#f56565';
 
     ctx.save();
-    ctx.shadowColor = color;
-    ctx.shadowBlur = 8;
-    ctx.beginPath();
-    ctx.arc(x, y, 6, 0, Math.PI * 2);
-    ctx.fillStyle = color;
-    ctx.fill();
+    ctx.shadowColor = color; ctx.shadowBlur = 8;
+    ctx.beginPath(); ctx.arc(x, y, p.type === 'reassign' ? 5 : 6, 0, Math.PI * 2);
+    ctx.fillStyle = color; ctx.fill();
     ctx.restore();
 
     ctx.save();
     ctx.fillStyle = 'rgba(255,255,255,0.85)';
     ctx.font = `9px 'SF Mono', monospace`;
     ctx.textAlign = 'center';
-    ctx.fillText(p.userId.slice(0, 3), x, y - 10);
+    const lbl = p.type === 'reassign' ? 'rsn' : p.userId.slice(0, 3);
+    ctx.fillText(lbl, x, y - 10);
     ctx.restore();
   }
 
-  ctx.restore(); // remove dpr scale
+  ctx.restore();
 }
 
 // ── Simulation ────────────────────────────────────────────────────────────────
@@ -604,22 +675,66 @@ function initState() {
   const numW = S.phase < 3 ? 1 : 3;
   for (const u of USERS) S.users[u] = { tokens: S.bucketCap };
   for (let i = 0; i < numW; i++) S.workers.push({ ok: 0, rl: 0 });
+
+  // Phase 5
+  S.coordAlive  = true;
+  S.redisState  = {};
+  S.redisPulses = [];
+  for (const u of USERS) S.redisState[u] = S.bucketCap;
+
+  // Phase 6
+  S.workerAlive = [true, true, true];
+  S.hbAccs      = [0, 0, 0];
+  S.heartbeats  = [];
+  S.tasks       = [];
+  S.taskIdCtr   = 0;
+  S.scanAcc     = 0;
 }
 
 function spawnPacket(userId) {
-  const numW = S.phase < 3 ? 1 : 3;
-  const wi = Math.floor(Math.random() * numW);
+  let wi;
+  if (S.phase < 3) {
+    wi = 0;
+  } else if (S.phase === 6 || S.phase === 7) {
+    // The LB retries on connection failure and routes around dead workers.
+    // Only pick from workers that are currently alive.
+    const live = [0, 1, 2].filter(i => S.workerAlive[i]);
+    if (live.length === 0) return;   // all workers dead — LB returns error, drop silently
+    wi = live[Math.floor(Math.random() * live.length)];
+  } else {
+    wi = Math.floor(Math.random() * 3);
+  }
   S.pid++;
   S.packets.push({
-    id: S.pid,
-    userId,
-    wi,
-    hops: HOPS[S.phase],
-    hop: 0,
-    t: 0,
+    id: S.pid, userId, wi,
+    hops: HOPS[S.phase], hop: 0, t: 0,
     speed: 0.018 + Math.random() * 0.008,
     status: 'pending',
   });
+}
+
+function decideOutcome(p) {
+  // Called at the "coord response" hop for phases 2-6, or "server response" for phase 1
+  if (S.phase === 1) { p.status = 'ok'; return; }
+
+  // Phase 5: if coord is dead, fail-closed
+  if ((S.phase === 4 || S.phase === 5 || S.phase === 7) && !S.coordAlive) {
+    p.status = 'rl'; return;
+  }
+
+  const u = S.users[p.userId];
+  const cost = S.phase === 3 ? 0.5 : 1;  // phase 3 splits across workers
+  if (u && u.tokens >= cost) {
+    p.status = 'ok';
+    u.tokens -= cost;
+    // Phase 5: sync to Redis after each allowed check
+    if ((S.phase === 5 || S.phase === 7) && S.coordAlive) {
+      S.redisState[p.userId] = u.tokens;
+      spawnRedisPulse();
+    }
+  } else {
+    p.status = 'rl';
+  }
 }
 
 function stepPackets(dt) {
@@ -630,36 +745,39 @@ function stepPackets(dt) {
       p.t = 0;
       p.hop++;
 
-      // Determine outcome
-      if (S.phase === 4 && p.hop === 3) {
-        // coord response received
-        const u = S.users[p.userId];
-        if (u && u.tokens >= 1) { p.status = 'ok'; u.tokens -= 1; }
-        else p.status = 'rl';
-      } else if (S.phase === 2 && p.hop === 1) {
-        const u = S.users[p.userId];
-        if (u && u.tokens >= 1) { p.status = 'ok'; u.tokens -= 1; }
-        else p.status = 'rl';
-      } else if (S.phase === 3 && p.hop === 2) {
-        const u = S.users[p.userId];
-        if (u && u.tokens >= 0.5) { p.status = 'ok'; u.tokens -= 0.5; }
-        else p.status = 'rl';
-      } else if (S.phase === 1 && p.hop === 1) {
-        p.status = 'ok';
+      // Determine outcome at the right hop
+      const revealHop = S.phase === 4 || S.phase === 5 || S.phase === 6 || S.phase === 7 ? 3
+                      : S.phase === 3 ? 2
+                      : S.phase === 2 ? 1
+                      : 1;  // phase 1: hop 1 (s→c)
+      if (p.hop === revealHop && p.status === 'pending') decideOutcome(p);
+
+      // Phase 6: create a task when a request is approved and arrives at worker (hop 2 = w→coord start)
+      if ((S.phase === 6 || S.phase === 7) && p.hop === 2 && p.status === 'pending') {
+        // Not decided yet, but worker is receiving it — create pending task
+        if (S.workerAlive[p.wi]) {
+          const tid = `t${++S.taskIdCtr}`;
+          S.tasks.push({
+            id: tid, userId: p.userId, wi: p.wi,
+            startedAt: performance.now(),
+            duration: S.taskDuration,
+            status: 'running',
+            pktId: p.id,
+          });
+        }
       }
 
-      if (p.hop >= p.hops.length) {
-        done.push(p);
-      }
+      if (p.hop >= p.hops.length) done.push(p);
     }
   }
   for (const p of done) {
     S.packets = S.packets.filter(x => x.id !== p.id);
-    if (p.live) continue;  // live packets: stats already recorded in handleLiveEvent
+    if (p.live) continue;
+    if (p.type === 'reassign') continue;
     const accepted = p.status === 'ok';
     S.total++; accepted ? S.ok++ : S.rl++;
     if (S.workers[p.wi]) accepted ? S.workers[p.wi].ok++ : S.workers[p.wi].rl++;
-    addLog(p.userId, accepted);
+    addLog(p.userId, accepted ? 'ok' : 'rl');
     updateStats();
   }
 }
@@ -670,15 +788,271 @@ function refillTokens(dt) {
   }
 }
 
+// ── Phase 5: Redis pulses ──────────────────────────────────────────────────────
+function spawnRedisPulse() {
+  S.redisPulses.push({ dir: 'out', t: 0, speed: 0.04 });
+}
+
+function stepRedisPulses(dt) {
+  const done = [];
+  for (const p of S.redisPulses) {
+    p.t += p.speed * (dt / 16);
+    if (p.t >= 1) {
+      if (p.dir === 'out') { p.dir = 'in'; p.t = 0; }
+      else done.push(p);
+    }
+  }
+  S.redisPulses = S.redisPulses.filter(p => !done.includes(p));
+}
+
+// ── Phase 6: Heartbeats ───────────────────────────────────────────────────────
+function spawnHeartbeat(wi, nodes) {
+  if (!nodes.workers || !nodes.coord) return;
+  const w = nodes.workers[wi];
+  S.heartbeats.push({ cx: w.x, cy: w.y, tx: nodes.coord.x, ty: nodes.coord.y, t: 0, speed: 0.025, wi });
+}
+
+function stepHeartbeatsWithNodes(dt, nodes) {
+  const done = [];
+  for (const p of S.heartbeats) {
+    p.t += p.speed * (dt / 16);
+    if (p.t >= 1) done.push(p);
+    else {
+      if (nodes.workers && nodes.coord) {
+        const w = nodes.workers[p.wi];
+        p.cx = w.x + (nodes.coord.x - w.x) * p.t;
+        p.cy = w.y + (nodes.coord.y - w.y) * p.t;
+      }
+    }
+  }
+  S.heartbeats = S.heartbeats.filter(p => !done.includes(p));
+}
+
+// ── Phase 6: Task tracking ────────────────────────────────────────────────────
+function stepTasks(dt, now) {
+  for (const t of S.tasks) {
+    if (t.status === 'running') {
+      // Worker died → orphan
+      if (!S.workerAlive[t.wi]) {
+        t.status = 'orphaned';
+        addLog('coord', 'sys', `task ${t.id} orphaned (w:${PORTS[t.wi]} died)`);
+      }
+      // Normal completion
+      else if (now - t.startedAt >= t.duration) {
+        t.status = 'done';
+      }
+    }
+    if (t.status === 'reassigned-running') {
+      if (now - t.reassignStart >= t.duration) {
+        t.status = 'done';
+        addLog('coord', 'info', `task ${t.id} done (reassigned→:${PORTS[t.wi]})`);
+      }
+    }
+  }
+  // Clean up done tasks after 4 seconds of display time
+  S.tasks = S.tasks.filter(t => {
+    if (t.status !== 'done') return true;
+    const finishedAt = (t.reassignStart || t.startedAt) + t.duration;
+    return now - finishedAt < 4000;
+  });
+}
+
+function runCoordScanner(dt) {
+  S.scanAcc += dt;
+  if (S.scanAcc < 1000) return;  // scan every ~1000ms sim time
+  S.scanAcc = 0;
+
+  const orphaned = S.tasks.filter(t => t.status === 'orphaned');
+  if (orphaned.length === 0) return;
+
+  // Find a live worker for reassignment
+  const liveWorkers = [0, 1, 2].filter(i => S.workerAlive[i]);
+  if (liveWorkers.length === 0) return;
+
+  for (const t of orphaned) {
+    const newWi = liveWorkers[Math.floor(Math.random() * liveWorkers.length)];
+    t.status = 'reassigned-running';
+    t.wi = newWi;
+    t.reassignStart = performance.now();
+    addLog('coord', 'info', `REASSIGN task ${t.id} → :${PORTS[newWi]}`);
+
+    // Spawn a visual "reassign" packet from coord → new worker
+    S.pid++;
+    const cw = cv.width / devicePixelRatio;
+    const ch = cv.height / devicePixelRatio;
+    S.packets.push({
+      id: S.pid, userId: t.userId, wi: newWi,
+      hops: ['coord→w'], hop: 0, t: 0,
+      speed: 0.025 + Math.random() * 0.01,
+      status: 'ok', type: 'reassign',
+    });
+  }
+}
+
+// ── Kill / Reboot ─────────────────────────────────────────────────────────────
+function killCoord() {
+  if (!S.coordAlive) return;
+  // Save current bucket state to "Redis"
+  for (const u of USERS) {
+    if (S.users[u]) S.redisState[u] = S.users[u].tokens;
+  }
+  S.coordAlive = false;
+  addLog('system', 'sys', (S.phase === 5 || S.phase === 7)
+    ? 'coordinator KILLED — state persisted in Redis'
+    : 'coordinator KILLED — in-memory state LOST');
+  updateCoordStatus();
+  updateOverlays();
+}
+
+function rebootCoord() {
+  if (S.coordAlive) return;
+  if (S.phase === 5 || S.phase === 7) {
+    // Restore from Redis
+    for (const u of USERS) {
+      if (S.users[u] && S.redisState[u] !== undefined)
+        S.users[u].tokens = S.redisState[u];
+    }
+    addLog('system', 'info', 'coordinator rebooted — state RESTORED from Redis');
+  } else {
+    // In-memory: reset to full
+    for (const u of USERS) {
+      if (S.users[u]) S.users[u].tokens = S.bucketCap;
+    }
+    addLog('system', 'sys', 'coordinator rebooted — buckets RESET to full (state lost)');
+  }
+  S.coordAlive = true;
+  updateCoordStatus();
+  updateOverlays();
+}
+
+function killWorker(wi) {
+  if (!S.workerAlive[wi]) return;
+  S.workerAlive[wi] = false;
+  S.hbAccs[wi] = 0;
+  // Orphan any running tasks on this worker (stepTasks will handle)
+  addLog('system', 'sys', `worker :${PORTS[wi]} KILLED`);
+  updateWorkers();
+  updateOverlays();
+}
+
+function rebootWorker(wi) {
+  if (S.workerAlive[wi]) return;
+  S.workerAlive[wi] = true;
+  S.hbAccs[wi] = 0;
+  addLog('system', 'info', `worker :${PORTS[wi]} rebooted`);
+  updateWorkers();
+  updateOverlays();
+}
+
+// ── Overlay buttons ───────────────────────────────────────────────────────────
+// liveControl: POST to proxy /control endpoint, which kills/reboots real processes.
+// SSE events (coord_down/up, worker_down/up) will echo back and update S state.
+async function liveControl(action, role, index) {
+  const base = document.getElementById('live-url').value.trim().replace(/\/events$/, '');
+  try {
+    const r = await fetch(base + '/control', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ action, role, index }),
+    });
+    if (!r.ok) addLog('system', 'sys', `control ${action} ${role} failed (HTTP ${r.status})`);
+  } catch (e) {
+    addLog('system', 'sys', `control request failed: ${e.message}`);
+  }
+}
+
+function updateOverlays() {
+  const div = document.getElementById('node-overlays');
+  div.innerHTML = '';
+
+  const showSim  = !S.liveMode && S.running;
+  const showLive = S.liveMode && S.liveConnected;
+  if (!showSim && !showLive) return;
+
+  const cw = cv.clientWidth, ch = cv.clientHeight;
+  const nodes = layout(S.phase, cw, ch);
+
+  function addBtn(node, label, cls, onClick) {
+    const btn = document.createElement('button');
+    btn.className = `node-btn ${cls}`;
+    btn.textContent = label;
+    btn.style.left = node.x + 'px';
+    btn.style.top  = (node.y + 36) + 'px';
+    btn.addEventListener('click', onClick);
+    div.appendChild(btn);
+  }
+
+  const coordPhases = S.phase === 4 || S.phase === 5 || S.phase === 6 || S.phase === 7;
+  const workerPhases = S.phase === 6 || S.phase === 7;
+
+  if (coordPhases && nodes.coord) {
+    const alive = S.coordAlive;
+    addBtn(nodes.coord,
+      alive ? '⚡ Kill' : '↺ Reboot',
+      alive ? 'kill' : 'reboot',
+      showLive
+        ? () => liveControl(alive ? 'kill' : 'reboot', 'coord', 0)
+        : (alive ? killCoord : rebootCoord));
+  }
+
+  if (workerPhases && nodes.workers) {
+    for (let i = 0; i < nodes.workers.length; i++) {
+      const alive = S.workerAlive[i];
+      addBtn(nodes.workers[i],
+        alive ? '⚡ Kill' : '↺ Reboot',
+        alive ? 'kill' : 'reboot',
+        showLive
+          ? () => liveControl(alive ? 'kill' : 'reboot', 'worker', i)
+          : (alive ? () => killWorker(i) : () => rebootWorker(i)));
+    }
+  }
+}
+
+function clearOverlays() {
+  document.getElementById('node-overlays').innerHTML = '';
+}
+
 // ── Main loop ─────────────────────────────────────────────────────────────────
 function loop(ts) {
   if (!S.running) return;
   const dt = S.lastTs === null ? 0 : Math.min(ts - S.lastTs, 100);
   S.lastTs = ts;
+  const now = performance.now();
 
-  refillTokens(dt);
+  if (S.phase < 4 || S.coordAlive) refillTokens(dt);
   stepPackets(dt);
 
+  // Phase 5 Redis pulses
+  if (S.phase === 5 || S.phase === 7) stepRedisPulses(dt);
+
+  // Phase 6 / 7 heartbeats and task tracking
+  if (S.phase === 6 || S.phase === 7) {
+    const cw = cv.width / devicePixelRatio, ch = cv.height / devicePixelRatio;
+    const nodes = layout(S.phase, cw, ch);
+    stepHeartbeatsWithNodes(dt, nodes);
+
+    for (let wi = 0; wi < 3; wi++) {
+      if (S.workerAlive[wi]) {
+        S.hbAccs[wi] += dt;
+        if (S.hbAccs[wi] >= S.hbInterval) {
+          S.hbAccs[wi] = 0;
+          if (nodes.workers && nodes.coord) {
+            const w = nodes.workers[wi];
+            S.heartbeats.push({
+              cx: w.x, cy: w.y,
+              tx: nodes.coord.x, ty: nodes.coord.y,
+              t: 0, speed: 0.022, wi,
+            });
+          }
+        }
+      }
+    }
+    stepTasks(dt, now);
+    runCoordScanner(dt);
+    updateTasks();
+  }
+
+  // Spawn packets
   for (const u of USERS) {
     if (!S.userRates[u]) continue;
     S.spawnAccs[u] += dt;
@@ -698,11 +1072,12 @@ function loop(ts) {
 
 function start() {
   if (S.running) return;
-  S.running  = true;
-  S.lastTs   = null;
+  S.running = true;
+  S.lastTs  = null;
   S.spawnAccs = { alice: 0, bob: 0, carol: 0 };
   document.getElementById('start-btn').innerHTML = '&#9646; Stop';
   document.getElementById('start-btn').classList.add('stop');
+  updateOverlays();
   S.raf = requestAnimationFrame(loop);
 }
 
@@ -711,16 +1086,16 @@ function stop() {
   if (S.raf) { cancelAnimationFrame(S.raf); S.raf = null; }
   document.getElementById('start-btn').innerHTML = '&#9654; Start';
   document.getElementById('start-btn').classList.remove('stop');
+  clearOverlays();
 }
 
 function reset() {
   stop();
-  S.packets = [];
+  S.packets = []; S.heartbeats = []; S.redisPulses = [];
   S.total = 0; S.ok = 0; S.rl = 0;
   initState();
-  updateStats();
-  updateBuckets();
-  updateWorkers();
+  updateStats(); updateBuckets(); updateWorkers();
+  updateCoordStatus(); updateTasks();
   document.getElementById('log-list').innerHTML = '';
   drawFrame();
 }
@@ -736,9 +1111,8 @@ function updateStats() {
 
 function updateBuckets() {
   const sec = document.getElementById('bucket-section');
-  // Keep h3, replace rest
   const h3  = sec.querySelector('h3');
-  // Build new rows
+  h3.textContent = S.liveMode ? 'Token Buckets (estimated)' : 'Token Buckets';
   const rows = USERS.map(u => {
     const user = S.users[u] || { tokens: 0 };
     const pct  = Math.min(100, user.tokens / S.bucketCap * 100);
@@ -749,8 +1123,7 @@ function updateBuckets() {
       <span class="token-num">${Math.floor(user.tokens)}</span>
     </div>`;
   }).join('');
-  sec.innerHTML = '';
-  sec.appendChild(h3);
+  sec.innerHTML = ''; sec.appendChild(h3);
   sec.insertAdjacentHTML('beforeend', rows);
 }
 
@@ -761,29 +1134,126 @@ function updateWorkers() {
   const rows = Array.from({ length: numW }, (_, i) => {
     const w    = S.workers[i] || { ok: 0, rl: 0 };
     const port = S.phase < 3 ? 8080 : PORTS[i];
+    const dead = (S.phase === 6 || S.phase === 7) && !S.workerAlive[i];
     return `<div class="worker-row">
-      <div class="w-dot"></div>
-      <span class="w-lbl">:${port}</span>
+      <div class="w-dot${dead ? ' dead' : ''}"></div>
+      <span class="w-lbl${dead ? ' dead' : ''}">:${port}${dead ? '<span class="w-dead-badge">[dead]</span>' : ''}</span>
       <span class="w-stats">
         <span class="w-ok">&#10003;${w.ok}</span>
         <span class="w-rl">&#10007;${w.rl}</span>
       </span>
     </div>`;
   }).join('');
-  sec.innerHTML = '';
-  sec.appendChild(h3);
+  sec.innerHTML = ''; sec.appendChild(h3);
   sec.insertAdjacentHTML('beforeend', rows);
 }
 
-function addLog(userId, ok) {
+function updateCoordStatus() {
+  const section = document.getElementById('coord-status-section');
+  const banner  = document.getElementById('coord-banner');
+  const redisEl = document.getElementById('redis-state-display');
+
+  if (S.phase !== 5 && S.phase !== 7) { section.style.display = 'none'; return; }
+  section.style.display = '';
+
+  if (!S.coordAlive) {
+    banner.className = 'coord-banner dead';
+    banner.textContent = '⚠ Coordinator is DOWN — workers are fail-closed (all requests denied)';
+  } else if (S.phase === 5 || S.phase === 7) {
+    banner.className = 'coord-banner redis';
+    banner.textContent = '✓ Connected to Redis — token state is persistent';
+  } else {
+    banner.className = 'coord-banner';
+    banner.textContent = '';
+  }
+
+  // Show Redis-stored values
+  const rows = USERS.map(u => {
+    const stored = S.redisState[u] !== undefined ? S.redisState[u].toFixed(1) : '—';
+    return `<div class="user-row" style="margin-bottom:4px">
+      <span class="user-name" style="color:${COLORS[u]};font-size:10px">${u}</span>
+      <span style="font-size:10px;color:#718096">Redis: <span style="color:#e53e3e">${stored}</span> tokens</span>
+    </div>`;
+  }).join('');
+  redisEl.innerHTML = rows;
+}
+
+function updateTasks() {
+  const sec = document.getElementById('task-section');
+  if (S.phase !== 6 && S.phase !== 7) { sec.style.display = 'none'; return; }
+  sec.style.display = '';
+
+  const list = document.getElementById('task-list');
+  const visible = S.tasks.slice(-10).reverse();
+  const now = performance.now();
+
+  list.innerHTML = visible.map(t => {
+    const elapsed = now - (t.reassignStart || t.startedAt);
+    const progress = Math.min(100, elapsed / t.duration * 100);
+    const statusLabel = {
+      running: '⟳ running',
+      done: '✓ done',
+      orphaned: '✗ orphaned',
+      'reassigned-running': '↺ reassigned',
+    }[t.status] || t.status;
+    const barColor = t.status === 'orphaned' ? '#f56565'
+      : t.status === 'reassigned-running' ? '#4f8ef7'
+      : '#f6ad55';
+
+    return `<div class="task-row ${t.status === 'reassigned-running' ? 'reassigned' : t.status}">
+      <span class="task-id">${t.id}</span>
+      <span class="task-worker">:${PORTS[t.wi]}</span>
+      <div class="task-bar-wrap"><div class="task-bar" style="width:${progress}%;background:${barColor}"></div></div>
+      <span class="task-status ${t.status === 'reassigned-running' ? 'reassigned' : t.status}">${statusLabel}</span>
+    </div>`;
+  }).join('');
+}
+
+function addLog(userId, kind, msg) {
   const list = document.getElementById('log-list');
   const ts   = new Date().toLocaleTimeString('en-US', { hour12: false });
   const div  = document.createElement('div');
   div.className = 'log-entry';
-  div.innerHTML = `<span class="ts">${ts}</span>`
-    + `<span class="${ok ? 'log-ok' : 'log-rl'}">[${userId}] ${ok ? '✓ ok' : '✗ rate_limited'}</span>`;
+  let cls = 'log-ok';
+  let text = '';
+  if (kind === 'ok') { cls = 'log-ok'; text = `[${userId}] ✓ ok`; }
+  else if (kind === 'rl') { cls = 'log-rl'; text = `[${userId}] ✗ rate_limited`; }
+  else if (kind === 'sys') { cls = 'log-sys'; text = `[sys] ${msg}`; }
+  else if (kind === 'info') { cls = 'log-info'; text = `[coord] ${msg}`; }
+  div.innerHTML = `<span class="ts">${ts}</span><span class="${cls}">${text}</span>`;
   list.prepend(div);
-  while (list.children.length > 50) list.removeChild(list.lastChild);
+  while (list.children.length > 60) list.removeChild(list.lastChild);
+}
+
+function updateLatency() {
+  if (!S.liveMode || S.latencies.length === 0) return;
+  const sorted = [...S.latencies].sort((a, b) => a - b);
+  const pct = p => sorted[Math.min(Math.floor(sorted.length * p / 100), sorted.length - 1)];
+  document.getElementById('lat-p50').textContent = pct(50).toFixed(1);
+  document.getElementById('lat-p95').textContent = pct(95).toFixed(1);
+  document.getElementById('lat-p99').textContent = pct(99).toFixed(1);
+}
+
+// ── Phase visibility helpers ──────────────────────────────────────────────────
+function applyPhaseUI() {
+  const p = S.phase;
+  document.getElementById('task-dur-row').style.display = (p === 6 || p === 7) ? '' : 'none';
+  document.getElementById('task-section').style.display = (p === 6 || p === 7) ? '' : 'none';
+  document.getElementById('coord-status-section').style.display = (p === 5 || p === 7) ? '' : 'none';
+
+  // Phases 5, 6, 7 don't have live mode support — hide the toggle
+  const liveDisabled = p === 5 || p === 6 || p === 7;
+  document.getElementById('src-live').style.display = liveDisabled ? 'none' : '';
+  if (liveDisabled && S.liveMode) {
+    stopLive();
+    document.getElementById('src-sim').classList.add('active');
+    document.getElementById('src-live').classList.remove('active');
+    document.getElementById('sim-controls').style.display = '';
+    document.getElementById('live-panel').style.display   = 'none';
+    document.getElementById('latency-section').style.display = 'none';
+  }
+
+  updateCoordStatus();
 }
 
 // ── Control wiring ─────────────────────────────────────────────────────────────
@@ -802,6 +1272,10 @@ document.getElementById('refill-rate').addEventListener('input', e => {
   S.refillRate = +e.target.value;
   document.getElementById('refill-rate-val').textContent = S.refillRate + '/s';
 });
+document.getElementById('task-dur').addEventListener('input', e => {
+  S.taskDuration = +e.target.value;
+  document.getElementById('task-dur-val').textContent = (S.taskDuration / 1000).toFixed(1) + 's';
+});
 document.getElementById('start-btn').addEventListener('click', () => {
   S.running ? stop() : start();
 });
@@ -813,21 +1287,30 @@ document.querySelectorAll('.phase-tab').forEach(tab => {
     tab.classList.add('active');
     S.phase = +tab.dataset.phase;
     document.getElementById('phase-desc').innerHTML = PHASE_DESC[S.phase];
-    if (S.liveMode) { liveReset(); } else { reset(); }
+    applyPhaseUI();
+    if (S.liveMode) {
+      liveReset();
+      const base = document.getElementById('live-url').value.trim().replace(/\/events$/, '');
+      fetch(base + '/launch', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ phase: S.phase }),
+      }).catch(() => {});
+    } else {
+      reset();
+    }
   });
 });
 
 window.addEventListener('resize', () => { resize(); drawFrame(); });
 
 // ── Live Mode ─────────────────────────────────────────────────────────────────
-// Extra live-mode state stored directly on S.
 S.liveMode    = false;
 S.sse         = null;
-S.latencies   = [];     // rolling window of latency samples (ms)
+S.latencies   = [];
 S.liveConnected = false;
 
 function setLiveStatus(state) {
-  // state: 'connected' | 'connecting' | 'off'
   const dot = document.getElementById('live-dot');
   const txt = document.getElementById('live-status-txt');
   dot.className = `dot-${state}`;
@@ -840,33 +1323,24 @@ function setLiveStatus(state) {
 function startLive() {
   const url = document.getElementById('live-url').value.trim();
   if (!url) return;
-
   setLiveStatus('connecting');
   document.getElementById('live-connect-btn').textContent = 'Disconnect';
-
-  // Stop any running simulation first.
   if (S.running && !S.liveMode) stop();
-
   S.liveMode = true;
   S.sse = new EventSource(url);
-
   S.sse.onopen = () => {
     setLiveStatus('connected');
     document.getElementById('src-live').classList.add('live-active');
-    // Kick off the animation render loop.
+    updateOverlays();
     if (!S.running) {
-      S.running = true;
-      S.lastTs  = null;
-      S.raf     = requestAnimationFrame(liveLoop);
+      S.running = true; S.lastTs = null;
+      S.raf = requestAnimationFrame(liveLoop);
     }
   };
-
   S.sse.onerror = () => {
     setLiveStatus('off');
     document.getElementById('src-live').classList.remove('live-active');
-    // Keep trying — EventSource auto-reconnects.
   };
-
   S.sse.onmessage = e => {
     try { handleLiveEvent(JSON.parse(e.data)); } catch (_) {}
   };
@@ -874,8 +1348,7 @@ function startLive() {
 
 function stopLive() {
   if (S.sse) { S.sse.close(); S.sse = null; }
-  S.liveMode = false;
-  S.running  = false;
+  S.liveMode = false; S.running = false;
   if (S.raf) { cancelAnimationFrame(S.raf); S.raf = null; }
   setLiveStatus('off');
   document.getElementById('live-connect-btn').textContent = 'Connect';
@@ -883,122 +1356,134 @@ function stopLive() {
 }
 
 function liveReset() {
-  S.packets  = [];
-  S.total = 0; S.ok = 0; S.rl = 0;
-  S.latencies = [];
+  S.packets = []; S.heartbeats = []; S.redisPulses = [];
+  S.total = 0; S.ok = 0; S.rl = 0; S.latencies = [];
   initState();
-  updateStats();
-  updateBuckets();
-  updateWorkers();
-  updateLatency();
+  updateStats(); updateBuckets(); updateWorkers();
+  updateCoordStatus(); updateTasks(); updateLatency();
   document.getElementById('log-list').innerHTML = '';
 }
 
-// Called for every SSE message from the proxy.
 function handleLiveEvent(ev) {
   if (ev.type === 'snapshot') {
-    // Initial stats burst when we first connect — sync counts.
-    S.total = ev.total || 0;
-    S.ok    = ev.ok    || 0;
-    S.rl    = ev.rl    || 0;
-    // Restore per-user token levels if proxy already has them.
+    S.total = ev.total || 0; S.ok = ev.ok || 0; S.rl = ev.rl || 0;
+    if (ev.bucket_cap) S.bucketCap = ev.bucket_cap;
     if (ev.tokens) {
       for (const [u, t] of Object.entries(ev.tokens)) {
         if (S.users[u]) S.users[u].tokens = t;
       }
     }
-    updateStats();
-    updateBuckets();
-    return;
+    updateStats(); updateBuckets(); return;
   }
-
   if (ev.type === 'tokens') {
-    // Real token count from coordinator log.
     if (S.users[ev.user_id]) S.users[ev.user_id].tokens = ev.tokens;
-    updateBuckets();
+    if (S.phase === 5 || S.phase === 7) S.redisState[ev.user_id] = ev.tokens;
+    updateBuckets(); updateCoordStatus(); return;
+  }
+  if (ev.type === 'coord_down') {
+    S.coordAlive = false; updateCoordStatus(); updateOverlays();
+    addLog('system', 'sys', 'coordinator DOWN'); return;
+  }
+  if (ev.type === 'coord_up') {
+    S.coordAlive = true; updateCoordStatus(); updateOverlays();
+    addLog('system', 'info', 'coordinator UP'); return;
+  }
+  if (ev.type === 'worker_down') {
+    const wi = ev.worker_index ?? PORTS.indexOf(ev.port);
+    if (wi >= 0 && wi < 3) { S.workerAlive[wi] = false; updateWorkers(); updateOverlays(); }
+    addLog('system', 'sys', `worker :${ev.port} DOWN`); return;
+  }
+  if (ev.type === 'worker_up') {
+    const wi = ev.worker_index ?? PORTS.indexOf(ev.port);
+    if (wi >= 0 && wi < 3) { S.workerAlive[wi] = true; updateWorkers(); updateOverlays(); }
+    addLog('system', 'info', `worker :${ev.port} UP`); return;
+  }
+  if (ev.type === 'heartbeat') {
+    // Spawn heartbeat pulse
+    const wi = PORTS.indexOf(ev.port);
+    if (wi >= 0 && S.workerAlive[wi]) {
+      const cw = cv.width / devicePixelRatio, ch = cv.height / devicePixelRatio;
+      const nodes = layout(S.phase, cw, ch);
+      if (nodes.workers && nodes.coord) {
+        const w = nodes.workers[wi];
+        S.heartbeats.push({ cx: w.x, cy: w.y, t: 0, speed: 0.022, wi });
+      }
+    }
     return;
   }
-
+  if (ev.type === 'task_start') {
+    S.tasks.push({ id: ev.task_id, userId: ev.user_id, wi: PORTS.indexOf(ev.port) || 0,
+      startedAt: performance.now(), duration: ev.deadline_ms || S.taskDuration, status: 'running' });
+    updateTasks(); return;
+  }
+  if (ev.type === 'task_done') {
+    const t = S.tasks.find(x => x.id === ev.task_id);
+    if (t) t.status = 'done';
+    updateTasks(); return;
+  }
+  if (ev.type === 'reassigned') {
+    const t = S.tasks.find(x => x.id === ev.task_id);
+    if (t) { t.status = 'reassigned-running'; t.wi = PORTS.indexOf(ev.to_port) || 0; t.reassignStart = performance.now(); }
+    addLog('coord', 'info', `REASSIGN ${ev.task_id} → :${ev.to_port}`);
+    updateTasks(); return;
+  }
   if (ev.type === 'response') {
-    const isOk  = ev.status === 'ok';
-    const numW  = S.phase < 3 ? 1 : 3;
-    const wi    = Math.floor(Math.random() * numW);  // approximate worker assignment
-
-    // Record stats.
-    S.total++;
-    isOk ? S.ok++ : S.rl++;
+    const isOk = ev.status === 'ok';
+    const numW = S.phase < 3 ? 1 : 3;
+    const wi   = Math.floor(Math.random() * numW);
+    S.total++; isOk ? S.ok++ : S.rl++;
     if (S.workers[wi]) { isOk ? S.workers[wi].ok++ : S.workers[wi].rl++; }
-
-    // Track latency.
     if (typeof ev.latency_ms === 'number') {
       S.latencies.push(ev.latency_ms);
       if (S.latencies.length > 200) S.latencies.shift();
       updateLatency();
     }
-
-    // Spawn an animated packet for this real request.
     S.pid++;
     S.packets.push({
-      id:     S.pid,
-      userId: ev.user_id,
-      wi,
-      hops:   HOPS[S.phase],
-      hop:    0,
-      t:      0,
-      speed:  0.022 + Math.random() * 0.01,
-      status:  'pending',
-      outcome: isOk ? 'ok' : 'rl',
-      live:    true,    // flag: don't double-count stats on completion
+      id: S.pid, userId: ev.user_id, wi,
+      hops: HOPS[S.phase], hop: 0, t: 0,
+      speed: 0.022 + Math.random() * 0.01,
+      status: 'pending', outcome: isOk ? 'ok' : 'rl', live: true,
     });
-
-    addLog(ev.user_id, isOk);
-    updateStats();
-    updateWorkers();
-    return;
+    addLog(ev.user_id, isOk ? 'ok' : 'rl');
+    updateStats(); updateWorkers();
   }
 }
 
-// Animation loop for live mode — no simulation spawning or token refill.
 function liveLoop(ts) {
   if (!S.liveMode) return;
   const dt = S.lastTs === null ? 0 : Math.min(ts - S.lastTs, 100);
   S.lastTs = ts;
 
-  // Advance packets (live packets skip stat updates on completion).
+  if (S.phase === 5 || S.phase === 7) stepRedisPulses(dt);
+  if (S.phase === 6 || S.phase === 7) {
+    const cw = cv.width / devicePixelRatio, ch = cv.height / devicePixelRatio;
+    const nodes = layout(S.phase, cw, ch);
+    stepHeartbeatsWithNodes(dt, nodes);
+    stepTasks(dt, performance.now());
+    updateTasks();
+  }
+
   const done = [];
   for (const p of S.packets) {
     p.t += p.speed * (dt / 16);
     if (p.t >= 1) {
-      p.t = 0;
-      p.hop++;
-      // Reveal outcome at the same hop sim mode uses
+      p.t = 0; p.hop++;
       if (p.outcome !== undefined) {
-        const revealAt = S.phase === 4 ? 3 : S.phase === 3 ? 2 : 1;
+        const revealAt = (S.phase === 4 || S.phase === 5 || S.phase === 6 || S.phase === 7) ? 3 : S.phase === 3 ? 2 : 1;
         if (p.hop === revealAt) p.status = p.outcome;
       }
       if (p.hop >= p.hops.length) done.push(p);
     }
   }
   S.packets = S.packets.filter(p => !done.includes(p));
-
   drawFrame();
-
   S.raf = requestAnimationFrame(liveLoop);
 }
 
-function updateLatency() {
-  if (!S.liveMode || S.latencies.length === 0) return;
-  const sorted = [...S.latencies].sort((a, b) => a - b);
-  const pct = p => sorted[Math.min(Math.floor(sorted.length * p / 100), sorted.length - 1)];
-  document.getElementById('lat-p50').textContent = pct(50).toFixed(1);
-  document.getElementById('lat-p95').textContent = pct(95).toFixed(1);
-  document.getElementById('lat-p99').textContent = pct(99).toFixed(1);
-}
-
-// Toggle between Simulated and Live sources.
+// Toggle source buttons
 document.getElementById('src-sim').addEventListener('click', () => {
-  if (!S.liveMode) return;
-  stopLive();
+  if (S.liveMode) stopLive();
   document.getElementById('src-sim').classList.add('active');
   document.getElementById('src-live').classList.remove('active');
   document.getElementById('sim-controls').style.display = '';
@@ -1006,7 +1491,6 @@ document.getElementById('src-sim').addEventListener('click', () => {
   document.getElementById('latency-section').style.display = 'none';
   reset();
 });
-
 document.getElementById('src-live').addEventListener('click', () => {
   if (S.liveMode) return;
   document.getElementById('src-sim').classList.remove('active');
@@ -1014,23 +1498,26 @@ document.getElementById('src-live').addEventListener('click', () => {
   document.getElementById('sim-controls').style.display = 'none';
   document.getElementById('live-panel').style.display   = '';
   document.getElementById('latency-section').style.display = '';
-  liveReset();
-  initState();
-  drawFrame();
-});
+  liveReset(); initState(); drawFrame();
 
+  // Fire-and-forget launch of the current phase script, then connect.
+  const base = document.getElementById('live-url').value.trim().replace(/\/events$/, '');
+  fetch(base + '/launch', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ phase: S.phase }),
+  }).catch(() => {});
+  startLive();
+});
 document.getElementById('live-connect-btn').addEventListener('click', () => {
-  if (S.liveMode && S.sse) { stopLive(); }
-  else { startLive(); }
+  S.liveMode && S.sse ? stopLive() : startLive();
 });
-
 document.getElementById('live-reset-btn').addEventListener('click', liveReset);
 
 // ── Boot ──────────────────────────────────────────────────────────────────────
-// Allow sim-proxy (or a manual URL) to specify which phase to open on.
 const _params   = new URLSearchParams(window.location.search);
 const _urlPhase = parseInt(_params.get('phase'));
-if (_urlPhase >= 1 && _urlPhase <= 6) {
+if (_urlPhase >= 1 && _urlPhase <= 7) {
   S.phase = _urlPhase;
   document.querySelectorAll('.phase-tab').forEach(t => {
     t.classList.toggle('active', +t.dataset.phase === S.phase);
@@ -1038,22 +1525,25 @@ if (_urlPhase >= 1 && _urlPhase <= 6) {
 }
 resize();
 initState();
-updateStats();
-updateBuckets();
-updateWorkers();
+updateStats(); updateBuckets(); updateWorkers();
+applyPhaseUI();
 document.getElementById('phase-desc').innerHTML = PHASE_DESC[S.phase];
 drawFrame();
 
-// Auto-connect to Live mode when launched by sim-proxy (?live=1).
-if (_params.get('live') === '1') {
+// Keep-alive heartbeat so proxy knows the browser is still open.
+// Fails silently when proxy isn't running (sim-only mode).
+setInterval(() => {
+  const base = document.getElementById('live-url').value.trim().replace(/\/events$/, '');
+  if (base) fetch(base + '/ping').catch(() => {});
+}, 5000);
+
+if (_params.get('live') === '1' && S.phase !== 5 && S.phase !== 6 && S.phase !== 7) {
   document.getElementById('src-sim').classList.remove('active');
   document.getElementById('src-live').classList.add('active');
   document.getElementById('sim-controls').style.display  = 'none';
   document.getElementById('live-panel').style.display    = '';
   document.getElementById('latency-section').style.display = '';
-  liveReset();
-  initState();
-  drawFrame();
+  liveReset(); initState(); drawFrame();
   startLive();
 }
 </script>
