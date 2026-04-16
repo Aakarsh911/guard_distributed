@@ -19,7 +19,7 @@ S2_PORT=9412
 SIM_MS=5
 RL_CAP=5          # 5 tokens per user
 RL_REFILL=2       # 2 tokens/sec
-REDIS_ADDR="127.0.0.1:6379"
+REDIS_ADDR="${REDIS_ADDR:-127.0.0.1:6379}"
 
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 ROOT="$(dirname "$SCRIPT_DIR")"
