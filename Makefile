@@ -2,8 +2,8 @@ CXX      := g++
 CXXFLAGS := -std=c++17 -Wall -Wextra -O2 -pthread
 BUILDDIR := build
 
-HIREDIS_CFLAGS := $(shell pkg-config --cflags hiredis 2>/dev/null || echo "-I/opt/homebrew/include")
-HIREDIS_LIBS   := $(shell pkg-config --libs   hiredis 2>/dev/null || echo "-L/opt/homebrew/lib -lhiredis")
+HIREDIS_CFLAGS := $(shell pkg-config --cflags hiredis 2>/dev/null)
+HIREDIS_LIBS   := $(shell pkg-config --libs   hiredis 2>/dev/null || echo "-lhiredis")
 
 .PHONY: all clean
 
