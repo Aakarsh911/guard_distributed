@@ -2,6 +2,83 @@
 
 Distributed request-processing system for CS4730.
 
+## FROM REPORT, build instructions:
+
+This section provides exact commands to reproduce our results from scratch on the Khoury Linux cluster.
+
+```bash
+# Step 1: SSH into the Khoury Linux cluster
+ssh <your-username>@login.ccs.neu.edu
+
+# Step 2: Clone the repository
+git clone <repo-url> guard-distributed
+cd guard-distributed
+
+# Step 3: Verify compiler
+g++ --version
+# Should show g++ with C++17 support
+
+# Step 4: Install hiredis (if not already available)
+# On Khoury machines, check if hiredis is installed:
+dpkg -l | grep hiredis
+# If not available, you can build from source:
+# git clone https://github.com/redis/hiredis.git /tmp/hiredis
+# cd /tmp/hiredis && make && sudo make install
+# (or install to a local prefix if you don't have sudo)
+
+# Step 5: Build the project
+make clean
+make
+# Expected output: builds build/guard_server, build/guard_client,
+# build/guard_lb, build/guard_coord
+
+# Step 6: Verify binaries exist
+ls -la build/
+# Should show: guard_server, guard_client, guard_lb, guard_coord
+
+# Step 7: Run Phase 1 (single server baseline)
+bash scripts/run_phase1.sh
+# Expected: total=50, ok=50, rate_limited=0, errors=0
+# p50 ~ 8000 us, p99 ~ 10000 us
+
+# Step 8: Run Phase 2 (token-bucket rate limiting)
+bash scripts/run_phase2.sh
+# Expected: total=30, ok=5, rate_limited=25, errors=0
+
+# Step 9: Run Phase 3 (load balancer + 3 workers)
+bash scripts/run_phase3.sh
+# Expected: total=60, ok=60, distribution ~20/20/20
+
+# Step 10: Run Phase 4 (coordinator global limiting)
+bash scripts/run_phase4.sh
+# Expected: alice ok=5, denied=10; bob ok=5, denied=10
+
+# Step 11: Run Phase 4 refill
+bash scripts/run_phase4_refill.sh
+# Expected: 5 waves with varying allow/deny per wave
+
+# Step 12: Start Redis (required for Phase 5+)
+You may need to install the server binary with brew/whatever package manager install redis
+redis-server --daemonize yes --port 6379
+# Verify:
+redis-cli ping
+# Should return: PONG
+
+# Step 13: Run Phase 5 (Redis persistence)
+bash scripts/run_phase5.sh
+# Expected: pre-kill allows, post-restart mostly denied,
+# post-sleep allows resume
+
+# Step 14: Run Phase 6 (fault-tolerant reassignment)
+bash scripts/run_phase6.sh
+# Expected: task_start=6, task_done=6, reassigned=2
+
+# Step 15: Run Phase 7 (combined system)
+bash scripts/run_phase7.sh
+# Tests persistence + reassignment together
+
+
+
 ## Phase 1: Single API Server
 
 A single TCP server that accepts length-prefixed JSON requests and
